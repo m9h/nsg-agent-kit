@@ -1,0 +1,8 @@
+# Extra deps for the PyTorch tool env. DO NOT list torch — the tool ships torch 2.0.1+cu117.
+# Pin to versions whose wheels are compatible with torch 2.0.1 and do not pull torch>=2.2.
+# Example set for a LoRA-REVE / OpenEEGBench sweep (verify pins with a local `pip download` dry run):
+peft==0.11.1
+transformers==4.41.2
+accelerate==0.30.1
+safetensors==0.4.3
+braindecode==0.8.1

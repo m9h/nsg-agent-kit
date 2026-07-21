@@ -1,0 +1,12 @@
+# secrets & local config
+nsgr/config.env
+*.env.local
+
+# build/output artifacts
+**/vendor/
+**/results/
+*.zip
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
