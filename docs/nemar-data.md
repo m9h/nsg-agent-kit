@@ -1,5 +1,17 @@
 # NEMAR data on Expanse (and why OpenEEGBench data isn't there)
 
+## Confirmed live (M0/NEMAR probe, 2026-07-22)
+
+- `NEMARPATH` = **`/expanse/projects/nemar/openneuro/`**, present in the `PYTORCH_PY_EXPANSE` tool.
+- **547 OpenNeuro `ds######` datasets** are mounted there — reachable with zero download.
+- The mirror is a **DataLad / git-annex** checkout: actual file content lives in
+  `.git/annex/objects/…` and is **materialized on Expanse** (real sizes, e.g. 11–316 MB `.fif`).
+  BIDS paths (`sub-01/eeg/sub-01_..._eeg.fif`) are **symlinks** into the annex store.
+  **Implication for loaders:** follow symlinks (mne-bids / `os.walk(followlinks=True)`), and don't
+  assume a plain file — resolve the link. Content is already local, so reads are fast and offline.
+- Example summarized: `ds001784` — 14 subjects, EEG, "Effects of ON/OFF deep brain stimulation on
+  cognitive control in treatment-resistant depression (EEG)".
+
 ## How NEMAR data reaches your job
 
 - NEMAR is the SDSC mirror of **OpenNeuro** EEG/MEG/iEEG. Uploads to OpenNeuro are cloned to SDSC via
