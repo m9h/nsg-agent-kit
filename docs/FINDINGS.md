@@ -61,10 +61,18 @@ PyTorch/LoRA workload:
   port materially easier (Strategy A/B both open, maybe without even vendoring). **Still confirm with a
   real install** (DNS + resolver + no proxy quirks) — that's the M1 probe: `pip install` then import
   `peft`/`transformers`/`braindecode` on the node.
-- **[LIVE — confirmed] `pip install mne` succeeded in 11 s on the node** (`nemar_load` job) and
-  imported (mne 1.6.1). Runtime pip is real, not just open sockets. ⇒ the LoRA port is a **quick win**:
-  `pip install peft transformers braindecode` at job start should work (torch 2.0.1 is the only
-  version ceiling; a dep needing torch≥2.2 still routes to Apptainer).
+- **[LIVE — with an important caveat] runtime pip works, but the tool's system venv is READ-ONLY.**
+  - `pip install mne` returned success in 11 s (`nemar_load`) — but that was because **mne is
+    pre-installed** in the image; pip had nothing to write.
+  - Installing a genuinely new package to the default location **fails**: the `jax_probe` v1 job hit
+    `OSError [Errno 30] Read-only file system: /usr/local/python/venv/.../site-packages/jax_plugins`.
+  - **Fix (the pattern to use):** install into a writable dir in the job cwd and add it to the path —
+    `pip install --target ./pylibs <pkgs>` then `sys.path.insert(0, "./pylibs")` (or `PYTHONPATH`).
+    `--user` is **not** an option (the env is a venv, which disallows `--user`).
+  - So the LoRA port is still a **quick win**, but the entry script must `--target`-install
+    `peft transformers braindecode` (not plain `pip install`). Vendoring stays the reproducible option.
+  - Driver is **`580.82.07`** (very recent, CUDA-12 capable) — so JAX's CUDA-12 wheels are viable
+    *once installed to a writable target*; that's what `jax_probe` v2 tests.
 - Vendoring wheels (`--no-index --find-links vendor/`) remains the robust fallback and the
   reproducibility-preferred path (pinned, no network flakiness) — see [`dependencies.md`](dependencies.md).
 

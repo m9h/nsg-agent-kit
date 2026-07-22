@@ -1,27 +1,47 @@
 #!/usr/bin/env python3
-"""Can JAX use the GPU on NSG? — the gate for running neurojax on Expanse.
+"""JAX-on-NSG, take 2 — the tool's system venv is READ-ONLY.
 
-The PyTorch tool env is CUDA 11.7, but modern JAX ships CUDA-12 pip wheels that bundle their own
-CUDA and only need a recent NVIDIA driver. This probe records the driver version, installs
-`jax[cuda12]` at runtime (egress confirmed), and checks whether jax.devices() sees the V100 —
-running a tiny on-device matmul to prove real compute. If the driver is too old for CUDA 12, it
-reports that cleanly (a real finding: JAX-on-NSG would then need an Apptainer image).
+v1 revealed: `pip install jax[cuda12]` failed with OSError [Errno 30] Read-only file system on
+/usr/local/python/venv/.../site-packages. So runtime pip cannot write to the system venv. The fix
+is to install into a writable target dir in the job cwd and prepend it to sys.path.
+
+This probe:
+  1. reports which key packages are ALREADY importable in the image (to explain why `mne` "installed"
+     in 11 s — it was likely pre-present),
+  2. `pip install --target=./pylibs jax[cuda12]` (writable), adds it to sys.path,
+  3. checks jax.devices() / gpu_visible and runs an on-device matmul.
 """
+import importlib
+import importlib.metadata as md
 import json
-import re
+import os
 import subprocess
 import sys
 import time
 
-RESULT = {"schema": "nsg-agent-kit/jax/v1", "started": time.strftime("%Y-%m-%dT%H:%M:%S")}
+RESULT = {"schema": "nsg-agent-kit/jax/v2", "started": time.strftime("%Y-%m-%dT%H:%M:%S")}
+TARGET = os.path.abspath("./pylibs")
 
 
-def sh(cmd, timeout=600):
+def sh(cmd, timeout=900):
     return subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
 
 
+def present(mod):
+    try:
+        v = md.version(mod)
+    except Exception:
+        v = None
+    try:
+        importlib.import_module(mod)
+        imp = True
+    except Exception:
+        imp = False
+    return {"version": v, "importable": imp}
+
+
 def main():
-    # 1) driver / CUDA from nvidia-smi
+    # driver
     try:
         smi = sh(["nvidia-smi", "--query-gpu=driver_version,name", "--format=csv,noheader"])
         line = smi.stdout.strip().splitlines()[0]
@@ -30,30 +50,29 @@ def main():
     except Exception as e:
         RESULT["smi_error"] = repr(e)
 
-    # 2) install jax with CUDA 12 wheels
+    # what's already in the image? (explains the mne "quick win")
+    RESULT["preinstalled"] = {p: present(p) for p in
+                              ("mne", "torch", "jax", "peft", "transformers", "braindecode", "numpy")}
+
+    # writable-target install
     t0 = time.time()
-    p = sh([sys.executable, "-m", "pip", "install", "--quiet", "-U", "jax[cuda12]"], timeout=900)
+    p = sh([sys.executable, "-m", "pip", "install", "--target", TARGET, "-U", "jax[cuda12]"])
     RESULT["pip_ok"] = p.returncode == 0
     RESULT["pip_seconds"] = round(time.time() - t0, 1)
     if p.returncode != 0:
         RESULT["pip_stderr_tail"] = p.stderr[-800:]
         return _write()
 
-    # 3) import + device check + tiny compute
+    sys.path.insert(0, TARGET)
     try:
         import jax
         import jax.numpy as jnp
         RESULT["jax_version"] = jax.__version__
-        devs = jax.devices()
-        RESULT["jax_devices"] = [str(d) for d in devs]
+        RESULT["jax_devices"] = [str(d) for d in jax.devices()]
         RESULT["jax_default_backend"] = jax.default_backend()
-        RESULT["gpu_visible"] = any(d.platform == "gpu" for d in devs)
-
-        key = jax.random.PRNGKey(0)
-        x = jax.random.normal(key, (1024, 1024))
-        y = (x @ x.T)
-        RESULT["matmul_trace"] = float(jnp.trace(y))
-        RESULT["compute_device"] = str(y.devices()) if hasattr(y, "devices") else str(devs[0])
+        RESULT["gpu_visible"] = any(d.platform == "gpu" for d in jax.devices())
+        x = jax.random.normal(jax.random.PRNGKey(0), (1024, 1024))
+        RESULT["matmul_trace"] = float(jnp.trace(x @ x.T))
         RESULT["jax_ok"] = True
     except Exception as e:
         RESULT["jax_ok"] = False

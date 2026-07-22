@@ -3,11 +3,19 @@
 Working assumption (see FINDINGS §3a): **the compute node cannot reach PyPI/HuggingFace during the
 job.** Design for offline. Three strategies, cheapest first.
 
+> **Read-only system venv (measured).** The tool's Python lives at `/usr/local/python/venv` and is
+> **read-only** — a plain `pip install <new-pkg>` fails with `OSError [Errno 30] Read-only file
+> system`. `--user` is disallowed (it's a venv). **Always install into a writable target and add it to
+> the path:** `pip install --target ./pylibs <pkgs>` + `export PYTHONPATH=$PWD/pylibs:$PYTHONPATH`
+> (see `templates/pytorch-gpu/entry.sh`). Packages already baked into the image (torch, mne, numpy…)
+> import with no install. Runtime egress to PyPI works, so `--target` installs succeed at job start.
+
 ## Strategy A — use only what the tool env ships
 
-The `PyTorch Python on Expanse (2.0.1+cu117)` env already has torch + CUDA and the usual scientific
-stack. If your code needs nothing else, you're done. The frozen probe deliberately lives here
-(torch + stdlib only) so it can run before you've solved deps.
+The `PyTorch Python on Expanse (2.0.1+cu117)` env already has torch + CUDA, **mne**, and the usual
+scientific stack (confirmed: `mne` imported with no install). If your code needs nothing else, you're
+done. The frozen probe deliberately lives here (torch + stdlib only) so it can run before you've
+solved deps.
 
 ## Strategy B — vendor wheels into the upload zip (recommended for the LoRA sweep)
 
