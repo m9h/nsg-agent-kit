@@ -1,17 +1,24 @@
 # nsg-agent-kit
 
-**Run computational-neuroscience jobs on the Neuroscience Gateway (NSG → SDSC Expanse), designed for AI agents.**
+**A practical guide + tooling for running computational-neuroscience jobs on the Neuroscience
+Gateway (NSG → SDSC Expanse) — for people *and* AI agents.**
 
-NSG ([nsgportal.org](https://www.nsgportal.org)) gives free access to NSF supercomputers
-(SDSC **Expanse**) for neuroscience compute. It has two entry points: a **web portal**
-(click-to-submit) and **NSG-R**, a REST API you can drive with `curl`. This repo is the
-missing manual + tooling for getting an arbitrary Python/PyTorch pipeline (e.g. a JAX EMEG
-toolkit, or a LoRA fine-tune sweep) running there against **NEMAR** datasets — the SDSC
-mirror of OpenNeuro EEG/MEG/iEEG data that lives *directly on Expanse's filesystem*.
+NSG ([nsgportal.org](https://www.nsgportal.org)) gives neuroscientists **free** access to NSF
+supercomputers (SDSC **Expanse**, incl. V100 GPUs) — no HPC allocation, no SSH. You upload a zip of
+your code, pick a software environment, and NSG runs it on Expanse and hands back the output. Two
+front doors: a **web portal** (click-to-submit) and **NSG-R**, a REST API you drive with `curl`.
+Through **NEMAR**, **547 OpenNeuro EEG/MEG/iEEG datasets** already sit on Expanse's disk, free to read
+from your job.
 
-It is written so that **another agent can read `docs/FINDINGS.md`, run one probe, and know
-whether porting a real workload is a quick win or real rework** — without re-discovering
-the platform from scratch.
+### 👉 New to NSG? Start with **[docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)**
+Zero to a real job on a real V100 — and its results back on your laptop — in ~30 minutes.
+
+This repo is the missing manual + tooling for getting an arbitrary Python/PyTorch/JAX pipeline (a JAX
+EMEG toolkit, a LoRA fine-tune sweep, an EEG benchmark) running on NSG against NEMAR data. It's
+written so a **newcomer can follow the guide and run their first job**, and so an **agent can read
+`docs/FINDINGS.md`, run one probe, and know whether porting a real workload is a quick win or real
+rework** — without re-discovering the platform from scratch. Everything here is **verified live on
+Expanse** (7 real jobs, 2026-07-22) — the facts and gotchas are measured, not guessed.
 
 > **Target ([`docs/ROADMAP.md`](docs/ROADMAP.md)):** make NSG the free-GPU backend for the entire
 > **OpenEEGBench** matrix — every EEG foundation model (BENDR, EEGPT, LaBraM, BIOT, REVE, …) ×
@@ -69,6 +76,8 @@ pytest probes/tests -q                              # GREEN
 ## Layout
 
 ```
+docs/GETTING_STARTED.md # ⭐ newcomer on-ramp: what NSG is, first job, key gotchas
+docs/ROADMAP.md         # the target: OpenEEGBench at scale on NSG (milestones M0–M5)
 docs/FINDINGS.md        # platform intel + confidence levels + must-verify list
 docs/tool-catalog.md    # dated snapshot of the live NSG tool list (exact versions)
 docs/nemar-data.md      # $NEMARPATH, ds access, NEMAR-vs-braindecode overlap
