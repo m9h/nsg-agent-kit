@@ -11,7 +11,7 @@ autonomous agents. Wrapper: [`../nsgr/nsgr.sh`](../nsgr/nsgr.sh).
    - `NSG_URL=https://nsgr.sdsc.edu:8443/cipresrest/v1`
    - `NSG_USER=<your username>`
    - `NSG_APPKEY=<Application ID>`
-   - `NSG_TOOL=<tool id>`  ← the authenticated Task page shows this (e.g. `PYTORCH_EXPANSE`)
+   - `NSG_TOOL=PYTORCH_PY_EXPANSE`  ← verified tool id (list all: `curl $NSG_URL/tool`, no auth needed)
    - `NSG_PASSWORD` — **do NOT put your password in the file.** Export it in your shell only:
      `read -s NSG_PASSWORD; export NSG_PASSWORD`  (so it never lands on disk or in logs).
 
@@ -38,11 +38,16 @@ source nsgr/config.env
 ## Raw curl (what the wrapper does)
 
 ```bash
-# submit
+# submit (PyTorch tool). vparam.filename_/subdirname_ point NSG at the entry script inside the zip;
+# see docs/tool-params.md for the full parameter list.
 curl -u "$NSG_USER:$NSG_PASSWORD" -H "cipres-appkey:$NSG_APPKEY" \
   "$NSG_URL/job/$NSG_USER" \
-  -F tool="$NSG_TOOL" \
+  -F tool=PYTORCH_PY_EXPANSE \
   -F input.infile_=@job.zip \
+  -F vparam.filename_=run.py \
+  -F vparam.subdirname_=reve_frozen_probe \
+  -F vparam.runtime_=0.5 \
+  -F vparam.number_gpus_=1 \
   -F metadata.statusEmail=true
 
 # list jobs

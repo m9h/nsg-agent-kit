@@ -31,10 +31,9 @@ portal's own. Kind is inferred from the tool name/description.
 
 ## Notes
 
-- **Tool IDs** (the string passed to NSG-R as `-F tool=...`) are *not* shown on this public page;
-  they appear on each tool's Task-creation page after login (e.g. `NEURON_EXPANSE` for NEURON).
-  For the PyTorch tool the ID is expected to be something like `PY_EXPANSE` / `PYTORCH_EXPANSE` —
-  **confirm on the authenticated Task page** and record it in `nsgr/config.example.env`.
+- **Tool IDs** are available **without auth** from the REST API: `curl https://nsgr.sdsc.edu:8443/cipresrest/v1/tool`.
+  Full ID list + the PyTorch tool's parameter spec are in [`tool-params.md`](tool-params.md).
+  The PyTorch tool id is **`PYTORCH_PY_EXPANSE`** (CPU Python = `PY_EXPANSE`).
 - GPU is selected by **choosing a GPU tool** (PyTorch, "Python on Expanse GPU", TensorFlow), not by a
   flag on the CPU "Python on Expanse" tool. They are distinct catalog entries.
 - The presence of **MRTrix (NeuroDesk)** confirms NSG runs **containerized** tools — the route for

@@ -51,7 +51,8 @@ cd ../.. && pytest probes/tests -q                  # RED
 
 # 3. Submit the zip to NSG (portal GUI or NSG-R). Two paths, both documented:
 #    - Portal:  docs/submit-portal.md   (tool: "PyTorch Python on Expanse")
-#    - REST:    ./nsgr/nsgr.sh submit PYTORCH_EXPANSE probes/reve_frozen_probe/reve_frozen_probe.zip
+#    - REST:    ./nsgr/nsgr.sh submit PYTORCH_PY_EXPANSE probes/reve_frozen_probe/reve_frozen_probe.zip
+#      (entry/GPU/runtime params come from NSG_EXTRA in config.env — see docs/tool-params.md)
 
 # 4. Fetch outputs into probes/reve_frozen_probe/results/ when the job finishes:
 #    ./nsgr/nsgr.sh fetch <jobhandle> probes/reve_frozen_probe/results/

@@ -67,13 +67,16 @@ PyTorch/LoRA workload:
 - **Probe answer:** `probes/reve_frozen_probe/run.py` tries a guarded outbound request and records
   `network_egress: true|false` in `metrics.json`. That single field closes this crux empirically.
 
-### 3b. GPU tool/queue specifics → **[VERIFY]**
-- Expanse GPU nodes = **4× NVIDIA V100 SMX2 32 GB** per node, partitions `gpu` / `gpu-shared`. **[DOC]**
-- The `PyTorch Python on Expanse` Task page exposes the GPU selection (almost certainly a
-  `gpu-shared` single-GPU default). Confirm **GPU count, cores, and max hours** on that page —
-  it's a *separate tool entry* from the CPU Python tool, so GPU is chosen by **picking the tool**,
-  not by a checkbox on the CPU tool. **[LIVE catalog + INFER]**
-- **Probe answer:** `run.py` records `torch.cuda.get_device_name(0)` and `device_count()`.
+### 3b. GPU tool/queue specifics → **RESOLVED** **[LIVE — REST param spec]**
+- Tool id = **`PYTORCH_PY_EXPANSE`**. GPU is chosen by picking this tool (distinct from the CPU
+  `PY_EXPANSE`). The tool's Pise param spec (public, no auth) exposes:
+  `number_gpus` (default 1, **max 4 V100/node**), `number_nodes` (max 72),
+  `number_gbmemorypernode` (max **243 GB**), `runtime` (default 0.5h, max 48h).
+- Entry point: param **`filename`** (default `input.py`) + **`subdirname`** (the top-level dir in
+  your zip that holds the entry file). Full table in [`tool-params.md`](tool-params.md).
+- All tools run **in Singularity** (per REST tool names) — containerized execution confirmed.
+- **Still probe-only:** exact GPU *model string* and the bundled Python version — `run.py` records
+  `torch.cuda.get_device_name(0)` / `device_count()` / `sys.version`.
 
 ### 3c. NEMAR data vs OpenEEGBench data → **no overlap** **[ANALYSIS]**
 - **NEMAR** = SDSC mirror of **OpenNeuro** EEG/MEG/iEEG, addressed as `ds######`, synced daily via
@@ -102,12 +105,18 @@ into a **[LIVE]** and pick the branch above with certainty.
 
 ## 5. Open must-verify list
 
+Resolved from the public REST API (2026-07-22):
+- [x] Tool id = `PYTORCH_PY_EXPANSE`; GPU count (max 4), nodes (max 72), mem (max 243 GB),
+  runtime (max 48h), entry via `filename`+`subdirname` — see `tool-params.md`.
+- [x] Execution is containerized (Singularity) — Apptainer route is first-class.
+
+Still open (need the live probe or SDSC):
 - [ ] `network_egress` on a compute node (pip-at-runtime feasibility) — **probe**
-- [ ] Bundled Python version of the PyTorch 2.0.1 tool — **probe**
-- [ ] GPU count / cores / max-hours fields on the PyTorch Task page — **authenticated portal**
+- [ ] Bundled Python version + exact GPU model string of the PyTorch tool — **probe**
+- [ ] Whether `NEMARPATH` is exported inside `PYTORCH_PY_EXPANSE` (vs only `NEMAR_EXPANSE`/EEGLAB) — **probe**
 - [ ] Whether `peft` / `transformers` / `braindecode` wheels resolve against torch 2.0.1+cu117 — **local `pip download` dry run**, see `dependencies.md`
 - [ ] Upload-size ceiling for the input zip (limits the "vendor everything" strategy) — **portal / nsghelp@sdsc.edu**
-- [ ] Whether a container-capable tool (NeuroDesk/Apptainer) accepts an arbitrary user image — **nsghelp@sdsc.edu**
+- [ ] Whether a container-capable tool accepts an *arbitrary user* Apptainer image — **nsghelp@sdsc.edu**
 
 ## Sources
 
