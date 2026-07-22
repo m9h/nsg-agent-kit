@@ -1,0 +1,22 @@
+-rwxr-xr-x 1 kenneth csd403 5360979968 Aug 16  2023 /expanse/projects/nsg/home/nsguser/kennethtest/singularity/openmpi.gpu/openmpi.jammy.gpu.sif
+Wed Jul 22 08:45:01 PDT 2026
+{
+  "schema": "nsg-agent-kit/probe/v1",
+  "started": "2026-07-22T08:45:03",
+  "python_version": "3.11.4",
+  "platform": "Linux-4.18.0-513.24.1.el8_9.x86_64-x86_64-with-glibc2.35",
+  "hostname": "exp-2-58",
+  "nemarpath": "/expanse/projects/nemar/openneuro/",
+  "nemarpath_exists": true,
+  "network_egress": true,
+  "torch_version": "2.0.1+cu117",
+  "cuda_available": true,
+  "gpu_count": 1,
+  "gpu_name": "Tesla V100-SXM2-32GB",
+  "device_used": "cuda",
+  "probe_accuracy": 0.9883,
+  "final_loss": 0.4753,
+  "probe_ok": true,
+  "finished": "2026-07-22T08:45:56"
+}
+Wed Jul 22 08:46:00 PDT 2026

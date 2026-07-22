@@ -5,7 +5,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-PYVER="${PYVER:-3.10}"                          # <-- set to the tool's actual Python
+PYVER="${PYVER:-3.11}"                           # tool Python is 3.11.4 (confirmed by M0 probe)
 PLAT="${PLAT:-manylinux2014_x86_64}"
 
 mkdir -p vendor

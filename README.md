@@ -25,10 +25,10 @@ the platform from scratch.
 | What runs the job? | SDSC Expanse, Slurm, **48 h max**, 64-core / 128–243 GB nodes | doc-confirmed |
 | PyTorch available? | **`PyTorch Python on Expanse (2.0.1+cu117)`** (GPU tool) | live catalog |
 | General Python? | **`Python on Expanse (3.11.4)`** (CPU) | live catalog |
-| Can the job `pip install` at runtime? | **Assume NO** — Expanse compute nodes have no general outbound internet; not documented ⇒ must be probed. Vendor wheels or ship Apptainer. | inference + must-verify |
-| Where's the data? | NEMAR/OpenNeuro `ds######` already on disk at **`$NEMARPATH/<ds-id>`** — no download inside the job | doc-confirmed |
+| Can the job `pip install` at runtime? | **Yes, likely** — M0 probe found `network_egress=true` on the GPU node (unusual for HPC). Confirm a real install in M1. Vendoring stays the reproducible fallback. | **live probe** |
+| Where's the data? | NEMAR/OpenNeuro `ds######` on disk at **`$NEMARPATH/<ds-id>`** = `/expanse/projects/nemar/openneuro/`, **confirmed live in the PyTorch tool** | **live probe** |
 | Does NEMAR overlap OpenEEGBench data? | **No.** OpenEEGBench uses HuggingFace `braindecode/*`; NEMAR is OpenNeuro `ds######`. Two different corpora. | analysis |
-| GPU type/count per PyTorch task? | Expected 1× **V100 32 GB** (`gpu-shared`); **verify on the tool's Task page** | must-verify |
+| GPU type/count per PyTorch task? | **1× `Tesla V100-SXM2-32GB`** (confirmed on node `exp-2-58`), Python **3.11.4** | **live probe** |
 
 See **[`docs/FINDINGS.md`](docs/FINDINGS.md)** for the full writeup and every "must-verify".
 

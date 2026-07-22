@@ -53,19 +53,16 @@ PyTorch/LoRA workload:
 
 ## 3. The three cruxes (what the orchestrator asked)
 
-### 3a. Runtime internet on compute nodes → **assume NO** **[INFER / VERIFY]**
-- Expanse compute nodes have **no general outbound internet** (standard SDSC posture; only login /
-  data-mover nodes reach the outside). NSG runs jobs on compute nodes.
-- NSG's public docs do **not** document a pip-at-runtime mechanism; the FAQ only says "commonly used
-  python modules are made available" — i.e. the tool env is **fixed**.
-- **Consequence:** do **not** rely on `pip install <x>` reaching PyPI mid-job. Options, in order of
-  preference:
-  1. Use only packages already in the tool env.
-  2. **Vendor wheels** into the zip and `pip install --no-index --find-links vendor/`
-     (works offline; see [`dependencies.md`](dependencies.md)).
-  3. Ship an **Apptainer** image with the full env baked in.
-- **Probe answer:** `probes/reve_frozen_probe/run.py` tries a guarded outbound request and records
-  `network_egress: true|false` in `metrics.json`. That single field closes this crux empirically.
+### 3a. Runtime internet on compute nodes → **EGRESS WORKS** **[LIVE — probe, 2026-07-22]**
+- **Surprise, and good news:** the probe on GPU node `exp-2-58` reported **`network_egress: true`** —
+  the compute node reached the public internet (pypi.org:443 / 8.8.8.8:53). This **contradicts** the
+  usual "HPC compute nodes are air-gapped" assumption; NSG's PyTorch tool node has outbound access.
+- **Consequence:** runtime `pip install <x>` from PyPI is **likely viable**, which makes the LoRA
+  port materially easier (Strategy A/B both open, maybe without even vendoring). **Still confirm with a
+  real install** (DNS + resolver + no proxy quirks) — that's the M1 probe: `pip install` then import
+  `peft`/`transformers`/`braindecode` on the node.
+- Vendoring wheels (`--no-index --find-links vendor/`) remains the robust fallback and the
+  reproducibility-preferred path (pinned, no network flakiness) — see [`dependencies.md`](dependencies.md).
 
 ### 3b. GPU tool/queue specifics → **RESOLVED** **[LIVE — REST param spec]**
 - Tool id = **`PYTORCH_PY_EXPANSE`**. GPU is chosen by picking this tool (distinct from the CPU
@@ -75,13 +72,18 @@ PyTorch/LoRA workload:
 - Entry point: param **`filename`** (default `input.py`) + **`subdirname`** (the top-level dir in
   your zip that holds the entry file). Full table in [`tool-params.md`](tool-params.md).
 - All tools run **in Singularity** (per REST tool names) — containerized execution confirmed.
-- **Still probe-only:** exact GPU *model string* and the bundled Python version — `run.py` records
-  `torch.cuda.get_device_name(0)` / `device_count()` / `sys.version`.
+- **[LIVE — probe] Confirmed on `exp-2-58`:** GPU = **`Tesla V100-SXM2-32GB`**, `gpu_count=1`
+  (as requested), **Python `3.11.4`**, `torch 2.0.1+cu117`, `cuda_available=true`. The bundled
+  Python is modern (3.11) — no ancient-interpreter tax for wheel compatibility.
 
 ### 3c. NEMAR data vs OpenEEGBench data → **no overlap** **[ANALYSIS]**
 - **NEMAR** = SDSC mirror of **OpenNeuro** EEG/MEG/iEEG, addressed as `ds######`, synced daily via
   DataLad, mounted on Expanse at **`$NEMARPATH`**. A job reads `os.environ["NEMARPATH"] + "/ds00XXXX"`
   directly — **no download, no internet**. **[DOC]**
+- **[LIVE — probe] `NEMARPATH` IS exported inside the PyTorch GPU tool**, pointing at
+  **`/expanse/projects/nemar/openneuro/`** and it exists on the node. So NEMAR/OpenNeuro data sits
+  right next to the V100 in `PYTORCH_PY_EXPANSE` — the "petabytes next to the GPU" win is real here,
+  not just in the EEGLAB/NEMAR tools.
 - **OpenEEGBench** ships its datasets via **HuggingFace `braindecode/*`**, *not* OpenNeuro `ds` ids.
   Those are **not** on NEMARPATH.
 - **Therefore for the oeb sweep you must either:** (a) pre-download the HF dataset(s) into the upload
@@ -110,12 +112,16 @@ Resolved from the public REST API (2026-07-22):
   runtime (max 48h), entry via `filename`+`subdirname` — see `tool-params.md`.
 - [x] Execution is containerized (Singularity) — Apptainer route is first-class.
 
-Still open (need the live probe or SDSC):
-- [ ] `network_egress` on a compute node (pip-at-runtime feasibility) — **probe**
-- [ ] Bundled Python version + exact GPU model string of the PyTorch tool — **probe**
-- [ ] Whether `NEMARPATH` is exported inside `PYTORCH_PY_EXPANSE` (vs only `NEMAR_EXPANSE`/EEGLAB) — **probe**
-- [ ] Whether `peft` / `transformers` / `braindecode` wheels resolve against torch 2.0.1+cu117 — **local `pip download` dry run**, see `dependencies.md`
-- [ ] Upload-size ceiling for the input zip (limits the "vendor everything" strategy) — **portal / nsghelp@sdsc.edu**
+Resolved by the M0 probe on GPU node `exp-2-58` (2026-07-22, Expanse Slurm job 52376208):
+- [x] **`network_egress = true`** — compute node reaches the internet; runtime pip likely viable.
+- [x] **Python 3.11.4**, GPU **Tesla V100-SXM2-32GB** ×1, torch 2.0.1+cu117, CUDA available.
+- [x] **`NEMARPATH` is live in `PYTORCH_PY_EXPANSE`** = `/expanse/projects/nemar/openneuro/` (exists).
+- [x] GPU compute runs end to end (probe_accuracy 0.988, `probe_ok`).
+
+Still open:
+- [ ] Real `pip install peft transformers braindecode` on the node (egress works — does a full install + import succeed?) — **M1 probe**
+- [ ] Which OpenNeuro `ds######` are actually present under `$NEMARPATH` — **NEMAR discovery job (next)**
+- [ ] Upload-size ceiling for the input zip — **portal / nsghelp@sdsc.edu**
 - [ ] Whether a container-capable tool accepts an *arbitrary user* Apptainer image — **nsghelp@sdsc.edu**
 
 ## Sources
