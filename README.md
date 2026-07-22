@@ -13,6 +13,11 @@ It is written so that **another agent can read `docs/FINDINGS.md`, run one probe
 whether porting a real workload is a quick win or real rework** — without re-discovering
 the platform from scratch.
 
+> **Target ([`docs/ROADMAP.md`](docs/ROADMAP.md)):** make NSG the free-GPU backend for the entire
+> **OpenEEGBench** matrix — every EEG foundation model (BENDR, EEGPT, LaBraM, BIOT, REVE, …) ×
+> dataset × probing protocol — run as a fanned-out batch of NSG jobs, with the **LoRA-REVE** sweep
+> as the first research payload. Milestones M0–M5, each with a red→green gate.
+
 ## TL;DR for a porting decision
 
 | Question | Answer | Confidence |

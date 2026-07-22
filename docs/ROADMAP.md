@@ -1,0 +1,57 @@
+# Target: run OpenEEGBench at scale on NSG
+
+## North star
+
+Make **NSG (free SDSC Expanse GPUs) the compute backend for the entire OpenEEGBench
+evaluation matrix** — every EEG foundation model × every dataset × every probing protocol —
+run reproducibly, driven by an agent, with results fetched back and validated by TDD contracts.
+The LoRA-REVE fine-tune sweep is the first-class research payload that rides the same rails.
+
+Why NSG for this: OpenEEGBench is *embarrassingly parallel* (each model×dataset×protocol cell is
+independent) and NSG gives free GPU time on Expanse (up to 4× V100/node, 72 nodes, 48h/job).
+One fan-out of the matrix into NSG-R jobs turns a benchmark that would saturate a lab GPU for weeks
+into an overnight batch — at zero marginal cost.
+
+## The matrix (to be pinned from the OpenEEGBench + braindecode manifests)
+
+- **Models (foundation encoders):** BENDR, EEGPT, Signal-JEPA, LaBraM, BIOT, **REVE**, plus
+  braindecode supervised baselines (EEGNet, ShallowConvNet, Deep4Net, EEG-Conformer, ATCNet).
+- **Datasets:** braindecode/MOABB + EEGDash corpora (BCI IV 2a/2b, PhysioNet MI, HGD, Sleep-EDF,
+  TUAB/TUEV, etc.). Braindecode exposes 150+ via MOABB and 700+ via EEGDash — start with the oeb
+  subset, then widen.
+- **Protocols:** (a) frozen encoder + linear probe, (b) full fine-tune, (c) **LoRA** (the REVE
+  research arm). Each protocol × seed is a job.
+
+Order of magnitude: ~10 models × ~15 datasets × 3 protocols × 3 seeds ≈ **1,300 jobs** — trivially
+within NSG's fan-out once one cell is green.
+
+## Milestones (each with a red→green gate, in the kit's TDD style)
+
+| # | Milestone | Green gate | Status |
+|---|---|---|---|
+| **M0** | **Platform probe** — env/GPU/network/NEMARPATH facts | `probes/reve_frozen_probe` returns valid `metrics.json`; contract test GREEN | **in flight** (job `NGBW-JOB-PYTORCH_PY_EXPANSE-…`) |
+| **M1** | **Dependency reality** — do `peft`/`braindecode`/`transformers` vendor against torch 2.0.1+cu117, or do we need Apptainer? | `templates/pytorch-gpu` job imports all real deps on the node; decide Strategy B vs C (`docs/dependencies.md`) | blocked on M0 |
+| **M2** | **One real cell** — a single (model, dataset, protocol) OpenEEGBench cell end-to-end on NSG | a job produces a valid per-cell result (accuracy/AUROC) fetched back + schema-validated | blocked on M1 |
+| **M3** | **Data staging** — get benchmark datasets onto Expanse without runtime internet | datasets resolvable from `$NEMARPATH` (OpenNeuro `ds`) or a one-time staged cache; job reads them offline | parallel to M2 |
+| **M4** | **Sweep harness** — fan the full matrix out as many NSG-R jobs, track/fetch/aggregate | `nsgr/sweep.py` submits N cells, polls all, fetches, and emits a leaderboard artifact; a coverage test asserts all cells GREEN or explains gaps | blocked on M2/M3 |
+| **M5** | **LoRA-REVE sweep** — the research payload: frozen REVE + LoRA across datasets/hyperparams | LoRA results table reproduced on NSG; matches (± tol) a local reference cell | blocked on M4 |
+
+## Success metrics
+
+- **Coverage:** fraction of matrix cells completed & TDD-green (target 100%, gaps logged, never silently dropped).
+- **Cost:** GPU-hours consumed (free, but tracked) and wall-clock — the win is *parallel* wall-clock ≪ serial.
+- **Reproducibility:** every reported number regenerable by re-running its job zip; contracts encode the schema.
+- **Portability:** the same zip runs on NSG *and* locally (Legion/Spark) unchanged — NSG is a backend, not a fork.
+
+## Design principles carried from the kit
+
+1. **Offline-first.** No runtime internet — vendor wheels + checkpoints, or Apptainer, or stage data to Expanse. (`docs/dependencies.md`, `docs/nemar-data.md`)
+2. **One cell = one job = one contract.** Every unit of the sweep is an independently submittable zip whose output a `pytest` contract validates — the M0 probe is the template.
+3. **Agent-drivable end to end.** `nsgr/nsgr.sh` (+ a coming `sweep.py`) means an agent submits, polls, fetches, and scores with no human in the loop after credentials are set.
+4. **No silent caps.** If the sweep bounds coverage (subset of datasets, seeds), it is logged, not hidden.
+
+## Immediate next step after M0 goes green
+
+Run the M1 dependency probe: extend `templates/pytorch-gpu` to `import torch, peft, transformers, braindecode`
+on the node and report versions — that single job decides Strategy B (vendored wheels, quick win) vs
+Strategy C (Apptainer, the durable route for newer torch / the `transformer_engine` patch).
