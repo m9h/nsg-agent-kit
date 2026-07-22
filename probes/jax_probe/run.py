@@ -1,47 +1,49 @@
 #!/usr/bin/env python3
-"""JAX-on-NSG, take 2 — the tool's system venv is READ-ONLY.
+"""JAX-on-NSG, take 4 — install to a writable target, then import in a CLEAN subprocess.
 
-v1 revealed: `pip install jax[cuda12]` failed with OSError [Errno 30] Read-only file system on
-/usr/local/python/venv/.../site-packages. So runtime pip cannot write to the system venv. The fix
-is to install into a writable target dir in the job cwd and prepend it to sys.path.
+Lessons baked in from v1-v3:
+  - the tool's system venv is READ-ONLY  -> install with `pip install --target ./pylibs`
+  - `--target` alone skips deps the system already has (numpy 1.24.3) -> add `--ignore-installed`
+    so the target is self-contained with a modern numpy
+  - you must import jax in a FRESH interpreter with PYTHONPATH=./pylibs; importing numpy/torch in
+    the same process first pins numpy 1.24.3 in sys.modules and shadows the target (this is exactly
+    why entry.sh sets PYTHONPATH then runs a new `python`).
 
-This probe:
-  1. reports which key packages are ALREADY importable in the image (to explain why `mne` "installed"
-     in 11 s — it was likely pre-present),
-  2. `pip install --target=./pylibs jax[cuda12]` (writable), adds it to sys.path,
-  3. checks jax.devices() / gpu_visible and runs an on-device matmul.
+Reports driver, what's pre-installed, install status, and jax.devices() from the clean subprocess.
 """
-import importlib
 import importlib.metadata as md
+import importlib.util as iu
 import json
 import os
 import subprocess
 import sys
 import time
 
-RESULT = {"schema": "nsg-agent-kit/jax/v2", "started": time.strftime("%Y-%m-%dT%H:%M:%S")}
+RESULT = {"schema": "nsg-agent-kit/jax/v4", "started": time.strftime("%Y-%m-%dT%H:%M:%S")}
 TARGET = os.path.abspath("./pylibs")
 
+JAX_CHECK = r"""
+import json
+try:
+    import jax, jax.numpy as jnp
+    import numpy
+    devs = jax.devices()
+    x = jax.random.normal(jax.random.PRNGKey(0), (1024, 1024))
+    out = {"jax_ok": True, "jax_version": jax.__version__, "numpy_version": numpy.__version__,
+           "jax_devices": [str(d) for d in devs], "jax_default_backend": jax.default_backend(),
+           "gpu_visible": any(d.platform == "gpu" for d in devs),
+           "matmul_trace": float(jnp.trace(x @ x.T))}
+except Exception as e:
+    out = {"jax_ok": False, "jax_error": repr(e)}
+print("JAXJSON:" + json.dumps(out))
+"""
 
-def sh(cmd, timeout=900):
-    return subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
 
-
-def present(mod):
-    try:
-        v = md.version(mod)
-    except Exception:
-        v = None
-    try:
-        importlib.import_module(mod)
-        imp = True
-    except Exception:
-        imp = False
-    return {"version": v, "importable": imp}
+def sh(cmd, timeout=900, env=None):
+    return subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, env=env)
 
 
 def main():
-    # driver
     try:
         smi = sh(["nvidia-smi", "--query-gpu=driver_version,name", "--format=csv,noheader"])
         line = smi.stdout.strip().splitlines()[0]
@@ -50,33 +52,35 @@ def main():
     except Exception as e:
         RESULT["smi_error"] = repr(e)
 
-    # what's already in the image? (explains the mne "quick win")
+    # inspect WITHOUT importing (find_spec + metadata only, so we don't poison sys.modules)
+    def present(mod):
+        try:
+            v = md.version(mod)
+        except Exception:
+            v = None
+        return {"version": v, "installed": iu.find_spec(mod) is not None}
     RESULT["preinstalled"] = {p: present(p) for p in
                               ("mne", "torch", "jax", "peft", "transformers", "braindecode", "numpy")}
 
-    # writable-target install
     t0 = time.time()
-    p = sh([sys.executable, "-m", "pip", "install", "--target", TARGET, "-U", "jax[cuda12]"])
+    p = sh([sys.executable, "-m", "pip", "install", "--target", TARGET,
+            "--ignore-installed", "-U", "jax[cuda12]"])
     RESULT["pip_ok"] = p.returncode == 0
     RESULT["pip_seconds"] = round(time.time() - t0, 1)
     if p.returncode != 0:
         RESULT["pip_stderr_tail"] = p.stderr[-800:]
         return _write()
 
-    sys.path.insert(0, TARGET)
-    try:
-        import jax
-        import jax.numpy as jnp
-        RESULT["jax_version"] = jax.__version__
-        RESULT["jax_devices"] = [str(d) for d in jax.devices()]
-        RESULT["jax_default_backend"] = jax.default_backend()
-        RESULT["gpu_visible"] = any(d.platform == "gpu" for d in jax.devices())
-        x = jax.random.normal(jax.random.PRNGKey(0), (1024, 1024))
-        RESULT["matmul_trace"] = float(jnp.trace(x @ x.T))
-        RESULT["jax_ok"] = True
-    except Exception as e:
-        RESULT["jax_ok"] = False
-        RESULT["jax_error"] = repr(e)
+    # import jax in a FRESH interpreter with the target ahead on PYTHONPATH
+    env = dict(os.environ, PYTHONPATH=TARGET)
+    r = sh([sys.executable, "-c", JAX_CHECK], env=env, timeout=300)
+    out = {}
+    for ln in r.stdout.splitlines():
+        if ln.startswith("JAXJSON:"):
+            out = json.loads(ln[len("JAXJSON:"):])
+    if not out:
+        out = {"jax_ok": False, "jax_error": "no JAXJSON line", "stderr_tail": r.stderr[-500:]}
+    RESULT.update(out)
     _write()
 
 

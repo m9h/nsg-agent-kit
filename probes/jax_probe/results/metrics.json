@@ -1,0 +1,48 @@
+{
+  "schema": "nsg-agent-kit/jax/v4",
+  "started": "2026-07-22T10:37:03",
+  "driver_version": "580.82.07",
+  "gpu_name": "Tesla V100-SXM2-32GB",
+  "preinstalled": {
+    "mne": {
+      "version": "1.6.1",
+      "installed": true
+    },
+    "torch": {
+      "version": "2.0.1",
+      "installed": true
+    },
+    "jax": {
+      "version": null,
+      "installed": false
+    },
+    "peft": {
+      "version": null,
+      "installed": false
+    },
+    "transformers": {
+      "version": null,
+      "installed": false
+    },
+    "braindecode": {
+      "version": null,
+      "installed": false
+    },
+    "numpy": {
+      "version": "1.24.3",
+      "installed": true
+    }
+  },
+  "pip_ok": true,
+  "pip_seconds": 166.4,
+  "jax_ok": true,
+  "jax_version": "0.10.2",
+  "numpy_version": "2.4.6",
+  "jax_devices": [
+    "cuda:0"
+  ],
+  "jax_default_backend": "gpu",
+  "gpu_visible": true,
+  "matmul_trace": 1046626.8125,
+  "finished": "2026-07-22T10:39:52"
+}

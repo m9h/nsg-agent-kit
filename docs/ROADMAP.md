@@ -62,8 +62,17 @@ longer.
 3. **Agent-drivable end to end.** `nsgr/nsgr.sh` (+ a coming `sweep.py`) means an agent submits, polls, fetches, and scores with no human in the loop after credentials are set.
 4. **No silent caps.** If the sweep bounds coverage (subset of datasets, seeds), it is logged, not hidden.
 
-## Immediate next step after M0 goes green
+## Progress log (live probes on Expanse, 2026-07-22)
 
-Run the M1 dependency probe: extend `templates/pytorch-gpu` to `import torch, peft, transformers, braindecode`
-on the node and report versions — that single job decides Strategy B (vendored wheels, quick win) vs
-Strategy C (Apptainer, the durable route for newer torch / the `transformer_engine` patch).
+- **M0 platform** ✅ Py 3.11.4, V100-SXM2-32GB, driver 580.82.07, torch 2.0.1+cu117, egress=true.
+- **NEMAR** ✅ 547 OpenNeuro `ds` at `/expanse/projects/nemar/openneuro/`; real EEG loads via MNE.
+- **M1 deps** ✅ quick win with a caveat: system venv is READ-ONLY → `pip install --target … --ignore-installed`
+  into node-local scratch (not the returned workdir); mne/torch/numpy pre-installed.
+- **JAX** ✅ `jax 0.10.2` GPU-native (`cuda:0`, backend=gpu) via the same pattern → **neurojax can run on NSG**.
+
+## Immediate next steps
+
+1. **M2 — one real scored cell:** attach a model to the NEMAR EEG already loading in `nemar_load`
+   (e.g. a braindecode classifier on a `ds` task) → produce accuracy/AUROC, fetch, schema-validate.
+2. **Port neurojax:** a job that `--target`-installs neurojax and runs its CLI on a NEMAR recording.
+3. **M4 — sweep harness (`nsgr/sweep.py`):** fan the matrix out as many NSG-R jobs, poll/fetch/aggregate.

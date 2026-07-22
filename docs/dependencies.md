@@ -10,6 +10,25 @@ job.** Design for offline. Three strategies, cheapest first.
 > (see `templates/pytorch-gpu/entry.sh`). Packages already baked into the image (torch, mne, numpy…)
 > import with no install. Runtime egress to PyPI works, so `--target` installs succeed at job start.
 
+> **Output-tarball bloat (measured).** NSG returns your **entire working dir** as `output.tar.gz`.
+> A `jax[cuda12]` install into `./pylibs` made the returned tarball **3.3 GB** (bundled NVIDIA CUDA
+> libs). **Install deps into node-local scratch outside the returned dir** (`$TMPDIR/nsgkit-pylibs`),
+> or delete the target before the script exits. `entry.sh` does the former.
+
+## JAX on NSG — confirmed working (jax 0.10.2, GPU)
+
+The PyTorch tool is a fine base for JAX too (driver 580.82.07, V100). Recipe that works:
+```bash
+pip install --target "$TMPDIR/nsgkit-pylibs" --ignore-installed "jax[cuda12]"   # ~166 s
+PYTHONPATH="$TMPDIR/nsgkit-pylibs" python your_jax_script.py                     # fresh interpreter
+```
+Result: `jax.devices() -> [cuda:0]`, `default_backend='gpu'`, numpy 2.4.6 in the target. This is the
+path for **neurojax** and any JAX tool. Two non-obvious requirements:
+1. `--ignore-installed` so the target carries a modern numpy (the image pins numpy 1.24.3, which
+   modern JAX rejects with `numpy has no attribute 'dtypes'`).
+2. import JAX in a **fresh** `python` that inherits `PYTHONPATH` — don't `import numpy/torch` in the
+   same process first, or the old numpy gets pinned in `sys.modules` and shadows the target.
+
 ## Strategy A — use only what the tool env ships
 
 The `PyTorch Python on Expanse (2.0.1+cu117)` env already has torch + CUDA, **mne**, and the usual
