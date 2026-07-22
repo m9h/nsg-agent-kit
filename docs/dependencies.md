@@ -59,10 +59,34 @@ Then run under a container-capable NSG tool. **[VERIFY]** the exact mechanism fo
 image (vs. the fixed NeuroDesk ones) with nsghelp@sdsc.edu — this is the one path that isn't fully
 self-serve from the public docs.
 
+## Strategy D — Spack (considered; niche fit for NSG, strong for the image build)
+
+[Spack](https://computing.llnl.gov/projects/spack-hpc-package-manager) is the LLNL HPC package
+manager (from-source builds, exact reproducible specs). Honest assessment against **how NSG runs
+jobs** — each tool is a *fixed Singularity container*, you upload a zip, it runs `python run.py`;
+there is **no persistent, interactive build step** and no `spack install` you can amortize across
+runs:
+
+- **Poor fit for per-job use on the NSG gateway.** You can't stand up a Spack environment inside a
+  0.5–48 h batch job without recompiling the world each run — wasteful, and there's no shell to
+  `spack load` into. Runtime pip already works here (M1: mne in 11 s), so Spack buys us nothing for
+  the base case.
+- **Strong fit for building the Apptainer image (Strategy C).** `spack containerize` generates a
+  reproducible Apptainer/Singularity recipe from a concretized spec — more reproducible than a
+  hand-written Dockerfile, and the right tool if we need a compiled `transformer_engine` against
+  torch≥2.2/CUDA-12. Build once locally, ship the `.sif`.
+- **Native fit *if* we leave the gateway for a direct Expanse ACCESS allocation** (SSH + Lmod +
+  SDSC's Spack). That's a different execution substrate — see ROADMAP's "gateway vs direct Expanse"
+  note. It trades the gateway's zero-setup/free-batch model for full control.
+
+**Verdict:** not needed now (runtime pip = quick win). Keep Spack in reserve for the reproducible
+Apptainer image (Strategy C) and revisit it seriously only if we move to a direct Expanse allocation.
+
 ## Decision
 
-- Deps resolve against **torch 2.0.1 / cu117** → **Strategy B**, quick win.
-- Any dep forces **newer torch/CUDA** → **Strategy C**, real rework.
+- Deps resolve against **torch 2.0.1 / cu117** → **Strategy A/B**, quick win (runtime pip confirmed).
+- Any dep forces **newer torch/CUDA** → **Strategy C** (Apptainer), optionally built with **Spack (D)**.
+- Move to a **direct Expanse allocation** → Spack/Lmod become the native stack manager.
 
 Run this locally to decide B-vs-C in ~1 minute, before touching NSG:
 

@@ -36,6 +36,18 @@ within NSG's fan-out once one cell is green.
 | **M4** | **Sweep harness** — fan the full matrix out as many NSG-R jobs, track/fetch/aggregate | `nsgr/sweep.py` submits N cells, polls all, fetches, and emits a leaderboard artifact; a coverage test asserts all cells GREEN or explains gaps | blocked on M2/M3 |
 | **M5** | **LoRA-REVE sweep** — the research payload: frozen REVE + LoRA across datasets/hyperparams | LoRA results table reproduced on NSG; matches (± tol) a local reference cell | blocked on M4 |
 
+## Execution substrate: NSG gateway vs direct Expanse (a strategic fork)
+
+Everything above assumes the **NSG gateway** (zip upload, free, no allocation paperwork, fixed
+Singularity tool envs, agent-drivable via NSG-R). Its ceiling is torch 2.0.1/cu117 unless we ship an
+Apptainer image. An alternative substrate is a **direct SDSC Expanse ACCESS allocation** (SSH, Lmod
+modules, SDSC's Spack, persistent installs, any CUDA) — full control at the cost of an allocation
+request and losing the push-button gateway flow. Decision rule: stay on the gateway while runtime
+pip + optional Apptainer cover the matrix (they currently do); move to a direct allocation only if we
+need a toolchain the container route can't reach, or interactive/iterative builds. See
+`docs/dependencies.md` Strategy C/D for the Apptainer + Spack bridge that keeps us on the gateway
+longer.
+
 ## Success metrics
 
 - **Coverage:** fraction of matrix cells completed & TDD-green (target 100%, gaps logged, never silently dropped).
