@@ -61,6 +61,10 @@ PyTorch/LoRA workload:
   port materially easier (Strategy A/B both open, maybe without even vendoring). **Still confirm with a
   real install** (DNS + resolver + no proxy quirks) — that's the M1 probe: `pip install` then import
   `peft`/`transformers`/`braindecode` on the node.
+- **[LIVE — confirmed] `pip install mne` succeeded in 11 s on the node** (`nemar_load` job) and
+  imported (mne 1.6.1). Runtime pip is real, not just open sockets. ⇒ the LoRA port is a **quick win**:
+  `pip install peft transformers braindecode` at job start should work (torch 2.0.1 is the only
+  version ceiling; a dep needing torch≥2.2 still routes to Apptainer).
 - Vendoring wheels (`--no-index --find-links vendor/`) remains the robust fallback and the
   reproducibility-preferred path (pinned, no network flakiness) — see [`dependencies.md`](dependencies.md).
 

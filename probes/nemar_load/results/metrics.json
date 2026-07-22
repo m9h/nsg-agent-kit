@@ -1,0 +1,20 @@
+{
+  "schema": "nsg-agent-kit/nemar-load/v1",
+  "started": "2026-07-22T09:15:39",
+  "nemarpath": "/expanse/projects/nemar/openneuro/",
+  "ds": "ds001784",
+  "pip_ok": true,
+  "pip_seconds": 11.1,
+  "mne_version": "1.6.1",
+  "recording": "sub-01/eeg/sub-01_task-afmsit_acq-dbsoff_eeg.fif",
+  "load_ok": true,
+  "n_channels": 65,
+  "sfreq_hz": 1450.0,
+  "duration_s": 822.3,
+  "channel_types": {
+    "stim": 4,
+    "eog": 1,
+    "eeg": 60
+  },
+  "finished": "2026-07-22T09:16:10"
+}
