@@ -12,6 +12,8 @@ from your job.
 
 ### 👉 New to NSG? Start with **[docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)**
 Zero to a real job on a real V100 — and its results back on your laptop — in ~30 minutes.
+Then read **[docs/LIMITATIONS.md](docs/LIMITATIONS.md)** — the constraints you must design around
+(48 h cap, fixed torch 2.0.1 env, read-only venv, no cross-job persistence, ~8–10 min batch latency).
 
 This repo is the missing manual + tooling for getting an arbitrary Python/PyTorch/JAX pipeline (a JAX
 EMEG toolkit, a LoRA fine-tune sweep, an EEG benchmark) running on NSG against NEMAR data. It's
@@ -77,6 +79,7 @@ pytest probes/tests -q                              # GREEN
 
 ```
 docs/GETTING_STARTED.md # ⭐ newcomer on-ramp: what NSG is, first job, key gotchas
+docs/LIMITATIONS.md     # ⚠ the constraints you must abide by (limits, fixed env, no persistence, latency)
 docs/ROADMAP.md         # the target: OpenEEGBench at scale on NSG (milestones M0–M5)
 docs/FINDINGS.md        # platform intel + confidence levels + must-verify list
 docs/tool-catalog.md    # dated snapshot of the live NSG tool list (exact versions)
