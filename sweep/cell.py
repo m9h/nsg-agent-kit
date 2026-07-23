@@ -304,6 +304,14 @@ def main():
     # otherwise pull numpy 2.x into the target dir, shadowing the image numpy and breaking torch
     # ("Could not infer dtype of numpy.float32"; transformers then can't detect torch).
     deps = ["numpy<2", "moabb", "scikit-learn"]
+    # Optional torch override into the target dir (shadows the image's pinned 2.0.1). REVE's model
+    # code imports torch.nn.attention (needs torch>=2.1), which 2.0.1 lacks. PyPI torch 2.4.1 is a
+    # cu121 build that HAS torch.nn.attention AND still ships Volta/sm_70 kernels for the V100.
+    # (Do NOT use cu130/nightly torch — those dropped Volta -> "no kernel image ... on the device".)
+    TORCH_OVERRIDE = CFG.get("torch")
+    if TORCH_OVERRIDE:
+        deps = [f"torch=={TORCH_OVERRIDE.split('+')[0]}"] + deps
+        RESULT["torch_override"] = TORCH_OVERRIDE
     if MODEL in ("reve", "lora"):
         # transformers 5.x drops torch<2.x (is_torch_available()->False on the image's 2.0.1).
         # Pin a 4.x line that still supports torch 2.0.1. If REVE's remote code needs transformers 5,

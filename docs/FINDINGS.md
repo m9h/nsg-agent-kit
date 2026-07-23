@@ -186,3 +186,32 @@ remaining gap is a torch/CUDA-kernel compatibility question, not our LoRA code.
 Artifacts: `sweep/cell.py` (`run_lora`), `probes/tests/test_lora_cell_contract.py` (RED before this
 work, still RED — the CUDA-kernel error means neither test passes yet),
 `sweep/results/lora_bnci2014_001/metrics.json` (the real, failed-at-forward-pass result).
+
+### 6a. CORRECTION (2026-07-23, measured): the node was NOT upgraded — peft pulled a new torch
+
+The §6 conclusion that "the `PYTORCH_PY_EXPANSE` tool image appears to have been upgraded to
+`2.13.0+cu130`" is **wrong**, and the fix is different (and easier) than escalating to SDSC. Measured
+directly on **three fresh jobs (2026-07-23)** that record the node env via `capture_env()`
+(`nvidia-smi` + `torch.__version__`):
+
+- **eegnet** and **reve** cells report **`torch 2.0.1+cu117`**, `python 3.11.4`, driver `580.82.07`,
+  `Tesla V100-SXM2-32GB` — **identical to M0**. The **image torch is unchanged.**
+- The jax re-probe still gets `jax 0.10.2`, `gpu_visible=True`.
+
+Why the LoRA jobs saw `2.13.0+cu130`: **`peft` hard-requires `torch`.** When `pip install --target`
+installs peft and torch is not already in the target dir, pip pulls the **latest** torch from PyPI
+(`2.13.0+cu130`) into `--target`, which **shadows** the image's 2.0.1. That cu130/CUDA-13 wheel's
+kernels **dropped Volta (sm_70)** → `no kernel image is available for execution on the device`. The
+reve/eegnet cells don't install peft (transformers lists torch as *optional*, moabb doesn't need it),
+so they use the image torch and run fine. **The node never changed; the job installed the wrong torch.**
+
+**Fix (applied):** pin a **V100-compatible torch into the target** via a `torch` key in `cell.json`
+(handled in `main()`): **`torch==2.4.1`** — PyPI's default is a **cu121** build that *has*
+`torch.nn.attention` (REVE's model code needs it; torch 2.0.1 lacks it, torch ≥2.1 has it) *and* still
+ships sm_70 kernels for the V100. Put it first in the dep list so peft sees torch already satisfied and
+doesn't pull cu130. This keeps REVE/LoRA on the gateway — **no Apptainer needed, no SDSC escalation.**
+(Do not use cu130/nightly torch on the V100.)
+
+So the real ceiling is narrower than "torch 2.0.1": REVE/LoRA need **torch ≥2.1**, satisfied by
+installing **torch 2.4.1 (cu121)** into the target. Only a dep that needs newer **CUDA** than the
+driver, or torch that has dropped Volta, would force Apptainer.
