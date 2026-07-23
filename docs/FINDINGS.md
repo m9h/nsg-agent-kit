@@ -143,3 +143,46 @@ Still open:
 - NSG quick start: <http://www.nsgportal.org/qs.html> · FAQ: <https://www.nsgportal.org/faq.html>
 - NEMAR ↔ NSG: <https://nemar.org/nsg_for_nemar> · NEMAR paper: <https://academic.oup.com/database/article/doi/10.1093/database/baac096/6823529>
 - Expanse user guide: <https://www.sdsc.edu/systems/expanse/user_guide.html>
+
+## 6. M5 attempt: LoRA-REVE cell on NSG (2026-07-22/23)
+
+Three real jobs submitted via `sweep/cell.py` (model=lora, BNCI2014_001 subject 1, MOABB source),
+each fixing one real blocker found by the previous run — no blocker was guessed, all three were
+diagnosed from the actual job's `metrics.json`/traceback:
+
+1. **Job `...1C5E01DA...`**: `model_error` = gated-repo 401 on `brain-bzh/reve-base` — no HF token
+   was passed into the job. Fixed by threading `hf_token` through `cell.json` (sourced from the
+   local `~/.cache/huggingface/token`, never logged).
+2. **Job `...3A1B5258...`**: HF auth now works (model/data load past that point); new
+   `model_error` = `AttributeError("module 'torch.distributed' has no attribute 'tensor'")` inside
+   `peft==0.18.1`'s `_get_in_out_features` (a DTensor/FSDP2 probe not populated in this torch
+   build). Fixed by pinning `peft==0.10.0`, predating that probe (also sidesteps the unrelated
+   `transformer_engine` import issue seen on the DGX 26.06 image — a different peft/torch pairing
+   entirely, same genre of "peft version probes a torch internal that isn't there").
+3. **Job `...210AFC61...`**: peft 0.10.0's LoRA adapter builds cleanly — `trainable_params:
+   5,758,016 / total_params: 74,947,648` (7.68%, consistent with r=32 LoRA on REVE's attention+FFN,
+   *not* a full-finetune-sized count). Training then fails at the first forward pass:
+   **`torch.AcceleratorError: CUDA error: no kernel image is available for execution on the
+   device`** — a torch-build/GPU-architecture mismatch, not a dependency-pin issue. This is
+   evidence the tool's actual environment is **not what the roadmap/tool-catalog docs describe**:
+   `diag_torch_version` reports **`2.13.0+cu130`** in all three jobs above, not the previously
+   `[LIVE]`-verified `2.0.1+cu117` from the M0 probe (2026-07-21/22) — **the NSG `PYTORCH_PY_EXPANSE`
+   tool's underlying image appears to have been upgraded since M0/M1 were verified**, and the new
+   torch build's compiled CUDA kernels likely don't include the V100's compute capability (a common
+   failure mode when a wheel is built targeting newer datacenter GPUs only).
+
+**This is a genuine, currently-unresolved platform blocker, not a config mistake we made.** Likely
+next step: confirm the GPU architecture actually assigned (`torch.cuda.get_device_capability()`,
+not captured in this run — add it to the next probe) and either (a) find a torch/peft/transformers
+combination whose kernels cover that architecture, or (b) escalate to nsghelp@sdsc.edu — the
+tool's live env no longer matches its own documented spec, worth reporting upstream regardless of
+our own workaround.
+
+**Progress against M5's actual gate**: not yet green (no successful forward pass on real data), but
+two of three real blockers on the path are now cleared and documented, and the LoRA adapter
+construction itself is confirmed working (right parameter count, right target modules) — the
+remaining gap is a torch/CUDA-kernel compatibility question, not our LoRA code.
+
+Artifacts: `sweep/cell.py` (`run_lora`), `probes/tests/test_lora_cell_contract.py` (RED before this
+work, still RED — the CUDA-kernel error means neither test passes yet),
+`sweep/results/lora_bnci2014_001/metrics.json` (the real, failed-at-forward-pass result).
