@@ -31,7 +31,7 @@ within NSG's fan-out once one cell is green.
 |---|---|---|---|
 | **M0** | **Platform probe** — env/GPU/network/NEMARPATH facts | `probes/reve_frozen_probe` returns valid `metrics.json`; contract test GREEN | **in flight** (job `NGBW-JOB-PYTORCH_PY_EXPANSE-…`) |
 | **M1** | **Dependency reality** — do `peft`/`braindecode`/`transformers` vendor against torch 2.0.1+cu117, or do we need Apptainer? | `templates/pytorch-gpu` job imports all real deps on the node; decide Strategy B vs C (`docs/dependencies.md`) | **DONE — quick win.** Runtime `pip install mne` worked in 11 s (`nemar_load`). Deps install at runtime; only torch≥2.2 needs Apptainer. |
-| **M2** | **One real cell** — a single (model, dataset, protocol) OpenEEGBench cell end-to-end on NSG | a job produces a valid per-cell result (accuracy/AUROC) fetched back + schema-validated | **in progress** — real NEMAR EEG already loads via MNE (`nemar_load`: 65ch/1450Hz). Next: attach a model + score. |
+| **M2** | **One real cell** — a single (model, dataset, protocol) OpenEEGBench cell end-to-end on NSG | a job produces a valid per-cell result (accuracy/AUROC) fetched back + schema-validated | **DONE (pipeline)** — `m2_cell`: EEGNet on ds002718 FaceRecognition (74ch, 650 trials) → test bal-acc 0.975 vs chance 0.769 on the V100. **Caveat:** the auto-picked 2-class contrast (most-frequent `trial_type`s) is not a curated scientific task — real cells need proper task defs. |
 | **M3** | **Data staging** — get benchmark datasets onto Expanse without runtime internet | datasets resolvable from `$NEMARPATH` (OpenNeuro `ds`) or a one-time staged cache; job reads them offline | **largely done** — 547 OpenNeuro `ds` live at `/expanse/projects/nemar/openneuro/` (git-annex, materialized). Remaining: map the oeb dataset list onto available `ds` ids; HF-only sets still need staging |
 | **M4** | **Sweep harness** — fan the full matrix out as many NSG-R jobs, track/fetch/aggregate | `nsgr/sweep.py` submits N cells, polls all, fetches, and emits a leaderboard artifact; a coverage test asserts all cells GREEN or explains gaps | blocked on M2/M3 |
 | **M5** | **LoRA-REVE sweep** — the research payload: frozen REVE + LoRA across datasets/hyperparams | LoRA results table reproduced on NSG; matches (± tol) a local reference cell | blocked on M4 |
@@ -69,6 +69,7 @@ longer.
 - **M1 deps** ✅ quick win with a caveat: system venv is READ-ONLY → `pip install --target … --ignore-installed`
   into node-local scratch (not the returned workdir); mne/torch/numpy pre-installed.
 - **JAX** ✅ `jax 0.10.2` GPU-native (`cuda:0`, backend=gpu) via the same pattern → **neurojax can run on NSG**.
+- **M2 cell** ✅ (pipeline) EEGNet on real NEMAR EEG (ds002718, 650 trials) → bal-acc 0.975 vs chance 0.769 on the V100. Contrast auto-picked, not yet curated — see caveat in the table.
 
 ## Immediate next steps
 

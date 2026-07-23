@@ -1,0 +1,26 @@
+{
+  "schema": "nsg-agent-kit/cell/v1",
+  "started": "2026-07-22T17:03:37",
+  "ds": "ds002718",
+  "recording": "sub-002_task-FaceRecognition_eeg.set",
+  "classes": [
+    "right_sym",
+    "unfamiliar_new"
+  ],
+  "class_counts": {
+    "right_sym": 500,
+    "unfamiliar_new": 150
+  },
+  "n_trials": 650,
+  "n_channels": 74,
+  "n_times": 129,
+  "sfreq_hz": 250.0,
+  "device": "cuda",
+  "gpu_name": "Tesla V100-SXM2-32GB",
+  "test_balanced_accuracy": 0.9748,
+  "test_accuracy": 0.9755,
+  "chance": 0.7692,
+  "n_test": 163,
+  "cell_ok": true,
+  "finished": "2026-07-22T17:04:04"
+}
