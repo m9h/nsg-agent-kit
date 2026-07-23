@@ -147,8 +147,18 @@ def run_reve(X, y, tr, te, ch_names, n_classes):
     from transformers import AutoModel
     dev = "cuda" if torch.cuda.is_available() else "cpu"
     RESULT["device"] = dev
-    pos_bank = AutoModel.from_pretrained("brain-bzh/reve-positions", trust_remote_code=True)
-    reve = AutoModel.from_pretrained(REVE, trust_remote_code=True).to(dev).eval()
+    # Prefer vendored local weights (shipped in the zip: HERE/reve-base, HERE/reve-positions) so no
+    # HF token or gated download is needed on NSG. Fall back to HF hub if not vendored.
+    base_dir = os.path.join(HERE, "reve-base")
+    pos_dir = os.path.join(HERE, "reve-positions")
+    if os.path.isdir(base_dir) and os.path.isdir(pos_dir):
+        RESULT["reve_source"] = "vendored"
+        pos_bank = AutoModel.from_pretrained(pos_dir, trust_remote_code=True, local_files_only=True)
+        reve = AutoModel.from_pretrained(base_dir, trust_remote_code=True, local_files_only=True).to(dev).eval()
+    else:
+        RESULT["reve_source"] = "hub"
+        pos_bank = AutoModel.from_pretrained("brain-bzh/reve-positions", trust_remote_code=True)
+        reve = AutoModel.from_pretrained(REVE, trust_remote_code=True).to(dev).eval()
     positions = pos_bank(ch_names)                      # (C, 3)
     if isinstance(positions, torch.Tensor):
         positions = positions.to(dev)
@@ -275,7 +285,21 @@ def _hidden_dim(peft_model):
     return 512  # brain-bzh/reve-base default width, fallback only
 
 
+def capture_env():
+    """Record the node's baseline software/hardware so a rerun shows if NSG refreshed the image."""
+    env = {"python": sys.version.split()[0]}
+    try:
+        import subprocess as _sp
+        smi = _sp.run(["nvidia-smi", "--query-gpu=driver_version,name,memory.total",
+                       "--format=csv,noheader"], capture_output=True, text=True, timeout=15)
+        env["nvidia_smi"] = smi.stdout.strip().splitlines()[0]
+    except Exception as e:
+        env["smi_error"] = repr(e)
+    RESULT["env"] = env
+
+
 def main():
+    capture_env()
     # Pin numpy<2: the image's torch 2.0.1 was built against numpy 1.x, and moabb/transformers
     # otherwise pull numpy 2.x into the target dir, shadowing the image numpy and breaking torch
     # ("Could not infer dtype of numpy.float32"; transformers then can't detect torch).
@@ -298,6 +322,13 @@ def main():
     sys.path.insert(0, LIBS)
 
     import numpy as np
+    try:
+        import torch as _t
+        RESULT["env"]["torch"] = _t.__version__
+        RESULT["env"]["numpy"] = np.__version__
+        RESULT["env"]["cuda_available"] = bool(_t.cuda.is_available())
+    except Exception:
+        pass
     try:
         X, y, ch, sessions, classes = load_data()
     except Exception as e:

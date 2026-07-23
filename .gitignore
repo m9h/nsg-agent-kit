@@ -10,3 +10,6 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .venv/
+
+# vendored REVE weights (264MB, pulled from HF via Spark token)
+sweep/reve_weights/
