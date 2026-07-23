@@ -1,0 +1,1055 @@
+{
+  "schema": "nsg-agent-kit/nemar-search/v1",
+  "started": "2026-07-22T17:23:37",
+  "n_scanned": 547,
+  "n_hits": 71,
+  "hits": [
+    {
+      "ds": "ds001784",
+      "name": "Effects of ON/OFF deep brain stimulation on cognitive control in treatment-resistant depression (EEG)",
+      "matched_keywords": [
+        "right hand"
+      ],
+      "tasks": [
+        "afmsit",
+        "rest"
+      ],
+      "task_match": [],
+      "n_subjects": 14
+    },
+    {
+      "ds": "ds002336",
+      "name": "A multi-modal human neuroimaging dataset for data integration: simultaneous EEG and fMRI acquisition during a motor imag",
+      "matched_keywords": [
+        "motor imagery",
+        "right hand"
+      ],
+      "tasks": [
+        "eegNF",
+        "eegfmriNF",
+        "fmriNF",
+        "motorloc"
+      ],
+      "task_match": [
+        "motorloc"
+      ],
+      "n_subjects": 10
+    },
+    {
+      "ds": "ds002338",
+      "name": "A multi-modal human neuroimaging dataset for data integration: simultaneous EEG and fMRI acquisition during a motor imag",
+      "matched_keywords": [
+        "motor imagery"
+      ],
+      "tasks": [
+        "1dNF",
+        "MIpost",
+        "MIpre"
+      ],
+      "task_match": [
+        "MIpost",
+        "MIpre"
+      ],
+      "n_subjects": 17
+    },
+    {
+      "ds": "ds002720",
+      "name": "A  dataset  recorded  during  development  of a  tempo-based  brain-computer  music  interface",
+      "matched_keywords": [
+        "right hand",
+        "brain-computer"
+      ],
+      "tasks": [
+        "run1",
+        "run2",
+        "run3",
+        "run4",
+        "run5",
+        "run6",
+        "run7",
+        "run8",
+        "run9"
+      ],
+      "task_match": [],
+      "n_subjects": 18
+    },
+    {
+      "ds": "ds002721",
+      "name": "An EEG dataset recorded during affective music listening",
+      "matched_keywords": [
+        "brain-computer"
+      ],
+      "tasks": [
+        "run1",
+        "run2",
+        "run3",
+        "run4",
+        "run5",
+        "run6"
+      ],
+      "task_match": [],
+      "n_subjects": 31
+    },
+    {
+      "ds": "ds002722",
+      "name": "A dataset recorded during development of an affective brain-computer music interface: calibration session",
+      "matched_keywords": [
+        "brain-computer"
+      ],
+      "tasks": [
+        "run1",
+        "run2",
+        "run3",
+        "run4",
+        "run5"
+      ],
+      "task_match": [],
+      "n_subjects": 19
+    },
+    {
+      "ds": "ds002723",
+      "name": "A dataset recorded during development of an affective brain-computer music interface: testing session",
+      "matched_keywords": [
+        "brain-computer"
+      ],
+      "tasks": [
+        "run1",
+        "run2",
+        "run3"
+      ],
+      "task_match": [],
+      "n_subjects": 8
+    },
+    {
+      "ds": "ds002724",
+      "name": "A dataset recorded during development of an affective brain-computer music interface: training sessions",
+      "matched_keywords": [
+        "brain-computer"
+      ],
+      "tasks": [
+        "run1",
+        "run2",
+        "run3",
+        "run4"
+      ],
+      "task_match": [],
+      "n_subjects": 10
+    },
+    {
+      "ds": "ds002833",
+      "name": "DataSet2",
+      "matched_keywords": [],
+      "tasks": [
+        "PicturesNaming"
+      ],
+      "task_match": [
+        "PicturesNaming"
+      ],
+      "n_subjects": 20
+    },
+    {
+      "ds": "ds003004",
+      "name": "Imagined Emotion Study",
+      "matched_keywords": [],
+      "tasks": [
+        "ImaginedEmotion"
+      ],
+      "task_match": [
+        "ImaginedEmotion"
+      ],
+      "n_subjects": 34
+    },
+    {
+      "ds": "ds003343",
+      "name": "Disentangling the percepts of illusory movement and sensory stimulation during tendon vibration in the EEG",
+      "matched_keywords": [
+        "sensorimotor"
+      ],
+      "tasks": [
+        "fps"
+      ],
+      "task_match": [],
+      "n_subjects": 20
+    },
+    {
+      "ds": "ds003421",
+      "name": "HD-EEGtask(Dataset 2)",
+      "matched_keywords": [],
+      "tasks": [
+        "PicturesNaming"
+      ],
+      "task_match": [
+        "PicturesNaming"
+      ],
+      "n_subjects": 20
+    },
+    {
+      "ds": "ds003568",
+      "name": "Mood induction in MDD and healthy adolescents",
+      "matched_keywords": [],
+      "tasks": [
+        "mmi3",
+        "rest"
+      ],
+      "task_match": [
+        "mmi3"
+      ],
+      "n_subjects": 51
+    },
+    {
+      "ds": "ds003626",
+      "name": "Inner Speech",
+      "matched_keywords": [
+        "brain-computer"
+      ],
+      "tasks": [
+        "innerspeech"
+      ],
+      "task_match": [],
+      "n_subjects": 10
+    },
+    {
+      "ds": "ds003739",
+      "name": "Perturbed beam-walking task",
+      "matched_keywords": [
+        "sensorimotor"
+      ],
+      "tasks": [
+        "pullstand",
+        "pullwalk",
+        "rotatestand",
+        "rotatewalk"
+      ],
+      "task_match": [],
+      "n_subjects": 30
+    },
+    {
+      "ds": "ds003766",
+      "name": "A resource for assessing dynamic binary choices in the adult brain using EEG and mouse-tracking",
+      "matched_keywords": [],
+      "tasks": [
+        "foodchoice",
+        "imagechoice",
+        "resting",
+        "wordchoice"
+      ],
+      "task_match": [
+        "imagechoice"
+      ],
+      "n_subjects": 31
+    },
+    {
+      "ds": "ds003810",
+      "name": "Motor Imagery vs Rest - Low-Cost EEG System",
+      "matched_keywords": [
+        "motor imagery",
+        " mi "
+      ],
+      "tasks": [
+        "MIvsRest"
+      ],
+      "task_match": [
+        "MIvsRest"
+      ],
+      "n_subjects": 10
+    },
+    {
+      "ds": "ds003987",
+      "name": "EEG: Amphetamine trials 5CCPT and Probabilistic Learning",
+      "matched_keywords": [],
+      "tasks": [
+        "5CCPTxPSTxAmphetamine"
+      ],
+      "task_match": [
+        "5CCPTxPSTxAmphetamine"
+      ],
+      "n_subjects": 23
+    },
+    {
+      "ds": "ds004022",
+      "name": "Multimodal EEG and fNIRS Biosignal Acquisition during Motor Imagery Tasks in Patients with Orthopedic Impairment",
+      "matched_keywords": [
+        "motor imagery",
+        " mi "
+      ],
+      "tasks": [
+        "motorimagery"
+      ],
+      "task_match": [
+        "motorimagery"
+      ],
+      "n_subjects": 7
+    },
+    {
+      "ds": "ds004196",
+      "name": "Bimodal dataset on Inner speech",
+      "matched_keywords": [
+        "brain-computer"
+      ],
+      "tasks": [
+        "inner"
+      ],
+      "task_match": [],
+      "n_subjects": 4
+    },
+    {
+      "ds": "ds004324",
+      "name": "ToonFaces",
+      "matched_keywords": [
+        "brain-computer"
+      ],
+      "tasks": [
+        "RSVP"
+      ],
+      "task_match": [],
+      "n_subjects": 26
+    },
+    {
+      "ds": "ds004350",
+      "name": "Executive Functionning Study for Assessing the Effect of Neurofeedback",
+      "matched_keywords": [
+        "right hand"
+      ],
+      "tasks": [
+        "LG",
+        "NB1",
+        "NB2",
+        "NB3",
+        "SART"
+      ],
+      "task_match": [],
+      "n_subjects": 24
+    },
+    {
+      "ds": "ds004389",
+      "name": "Somatosensory evoked potentials in the human spinal cord to mixed and sensory nerve stimulation",
+      "matched_keywords": [],
+      "tasks": [
+        "medianmixed",
+        "mediansensory",
+        "tibialmixed",
+        "tibialsensory"
+      ],
+      "task_match": [
+        "medianmixed",
+        "tibialmixed"
+      ],
+      "n_subjects": 26
+    },
+    {
+      "ds": "ds004444",
+      "name": "The BMI-HDEEG dataset 1",
+      "matched_keywords": [
+        "sensorimotor",
+        "brain-computer"
+      ],
+      "tasks": [
+        "smrbmi"
+      ],
+      "task_match": [
+        "smrbmi"
+      ],
+      "n_subjects": 30
+    },
+    {
+      "ds": "ds004446",
+      "name": "The BMI-HDEEG dataset 2",
+      "matched_keywords": [
+        "sensorimotor",
+        "brain-computer"
+      ],
+      "tasks": [
+        "smrbmi"
+      ],
+      "task_match": [
+        "smrbmi"
+      ],
+      "n_subjects": 30
+    },
+    {
+      "ds": "ds004447",
+      "name": "The BMI-HDEEG dataset 3",
+      "matched_keywords": [
+        "sensorimotor",
+        "brain-computer"
+      ],
+      "tasks": [
+        "smrbmi"
+      ],
+      "task_match": [
+        "smrbmi"
+      ],
+      "n_subjects": 22
+    },
+    {
+      "ds": "ds004448",
+      "name": "The BMI-HDEEG dataset 4",
+      "matched_keywords": [
+        "sensorimotor",
+        "brain-computer"
+      ],
+      "tasks": [
+        "smrbmi"
+      ],
+      "task_match": [
+        "smrbmi"
+      ],
+      "n_subjects": 56
+    },
+    {
+      "ds": "ds004514",
+      "name": "Simultaneous EEG and fNIRS recordings for semantic decoding of imagined animals and tools",
+      "matched_keywords": [
+        "left hand"
+      ],
+      "tasks": [
+        "eeg",
+        "nirs"
+      ],
+      "task_match": [],
+      "n_subjects": 12
+    },
+    {
+      "ds": "ds004517",
+      "name": "EEG recordings for semantic decoding of imagined animals and tools during auditory imagery task",
+      "matched_keywords": [
+        "brain-computer"
+      ],
+      "tasks": [
+        "eeg"
+      ],
+      "task_match": [],
+      "n_subjects": 7
+    },
+    {
+      "ds": "ds004554",
+      "name": "Forced Picture Naming Task",
+      "matched_keywords": [],
+      "tasks": [
+        "picturenaming"
+      ],
+      "task_match": [
+        "picturenaming"
+      ],
+      "n_subjects": 16
+    },
+    {
+      "ds": "ds004579",
+      "name": "Interval Timing Task",
+      "matched_keywords": [],
+      "tasks": [
+        "IntervalTiming"
+      ],
+      "task_match": [
+        "IntervalTiming"
+      ],
+      "n_subjects": 139
+    },
+    {
+      "ds": "ds004624",
+      "name": "Intracranial recordings using BCI2000 and the CorTec BrainInterchange",
+      "matched_keywords": [],
+      "tasks": [
+        "39db",
+        "45db",
+        "51db",
+        "57db",
+        "Alpha",
+        "Auditory",
+        "Awake",
+        "Beta",
+        "Broadband",
+        "Passive",
+        "Sensorimotor",
+        "Sleep",
+        "Socialreinforcement",
+        "Somatosensory",
+        "Stimulation",
+        "Visual",
+        "rec"
+      ],
+      "task_match": [
+        "Sensorimotor"
+      ],
+      "n_subjects": 3
+    },
+    {
+      "ds": "ds004785",
+      "name": "EEG data for paper titled - Precise cortical contributions to feedback sensorimotor control during reactive balance",
+      "matched_keywords": [
+        "sensorimotor"
+      ],
+      "tasks": [
+        "unnamed"
+      ],
+      "task_match": [],
+      "n_subjects": 17
+    },
+    {
+      "ds": "ds004841",
+      "name": "TX14",
+      "matched_keywords": [],
+      "tasks": [
+        "DriveOnMission"
+      ],
+      "task_match": [
+        "DriveOnMission"
+      ],
+      "n_subjects": 20
+    },
+    {
+      "ds": "ds004842",
+      "name": "TX15",
+      "matched_keywords": [],
+      "tasks": [
+        "DriveOnMission"
+      ],
+      "task_match": [
+        "DriveOnMission"
+      ],
+      "n_subjects": 14
+    },
+    {
+      "ds": "ds004951",
+      "name": "Braille letters - EEG",
+      "matched_keywords": [
+        "left hand",
+        "right hand"
+      ],
+      "tasks": [
+        "letters"
+      ],
+      "task_match": [],
+      "n_subjects": 11
+    },
+    {
+      "ds": "ds005007",
+      "name": "Auditory naming task with questions that begin or end with a wh-interrogative",
+      "matched_keywords": [],
+      "tasks": [
+        "namingtask"
+      ],
+      "task_match": [
+        "namingtask"
+      ],
+      "n_subjects": 40
+    },
+    {
+      "ds": "ds005079",
+      "name": "The Effects of Directed Therapeutic Intent on Live and Damaged Cells",
+      "matched_keywords": [],
+      "tasks": [
+        "BaselinePostCellPresent",
+        "BaselinePostControl1",
+        "BaselinePostControl2",
+        "BaselinePreCellPresent",
+        "BaselinePreControl1",
+        "BaselinePreControl2",
+        "TreatmentFirst5minCellPresent",
+        "TreatmentFirst5minControl1",
+        "TreatmentFirst5minControl2",
+        "TreatmentLast5minCellPresent",
+        "TreatmentLast5minControl1",
+        "TreatmentLast5minControl2",
+        "TreatmentMid5minCellPresent",
+        "TreatmentMid5minControl1",
+        "TreatmentMid5minControl2"
+      ],
+      "task_match": [
+        "TreatmentFirst5minCellPresent",
+        "TreatmentFirst5minControl1",
+        "TreatmentFirst5minControl2",
+        "TreatmentLast5minCellPresent",
+        "TreatmentLast5minControl1",
+        "TreatmentLast5minControl2",
+        "TreatmentMid5minCellPresent",
+        "TreatmentMid5minControl1",
+        "TreatmentMid5minControl2"
+      ],
+      "n_subjects": 1
+    },
+    {
+      "ds": "ds005170",
+      "name": "Chisco",
+      "matched_keywords": [],
+      "tasks": [
+        "imagine"
+      ],
+      "task_match": [
+        "imagine"
+      ],
+      "n_subjects": 5
+    },
+    {
+      "ds": "ds005279",
+      "name": "Picture-Word Interference Dataset",
+      "matched_keywords": [
+        "right hand"
+      ],
+      "tasks": [
+        "PWI"
+      ],
+      "task_match": [],
+      "n_subjects": 30
+    },
+    {
+      "ds": "ds005284",
+      "name": "26 By Biosemi",
+      "matched_keywords": [],
+      "tasks": [
+        "26ByBiosemi"
+      ],
+      "task_match": [
+        "26ByBiosemi"
+      ],
+      "n_subjects": 26
+    },
+    {
+      "ds": "ds005292",
+      "name": "142 by Biosemi",
+      "matched_keywords": [],
+      "tasks": [
+        "142ByBiosemi"
+      ],
+      "task_match": [
+        "142ByBiosemi"
+      ],
+      "n_subjects": 142
+    },
+    {
+      "ds": "ds005293",
+      "name": "95 By BP",
+      "matched_keywords": [
+        "left hand",
+        "right hand"
+      ],
+      "tasks": [
+        "95ByBP"
+      ],
+      "task_match": [],
+      "n_subjects": 95
+    },
+    {
+      "ds": "ds005342",
+      "name": "EEG data offline and online during motor imagery for standing and sitting",
+      "matched_keywords": [
+        "motor imagery"
+      ],
+      "tasks": [
+        "sitstand"
+      ],
+      "task_match": [],
+      "n_subjects": 32
+    },
+    {
+      "ds": "ds005672",
+      "name": "PerceiveImagine",
+      "matched_keywords": [],
+      "tasks": [
+        "PerceiveImagine"
+      ],
+      "task_match": [
+        "PerceiveImagine"
+      ],
+      "n_subjects": 3
+    },
+    {
+      "ds": "ds005697",
+      "name": "PerceiveImagine",
+      "matched_keywords": [],
+      "tasks": [
+        "PerceiveImagine"
+      ],
+      "task_match": [
+        "PerceiveImagine"
+      ],
+      "n_subjects": 51
+    },
+    {
+      "ds": "ds005810",
+      "name": "NOD-MEG",
+      "matched_keywords": [],
+      "tasks": [
+        "ImageNet"
+      ],
+      "task_match": [
+        "ImageNet"
+      ],
+      "n_subjects": 31
+    },
+    {
+      "ds": "ds005811",
+      "name": "NOD-EEG",
+      "matched_keywords": [],
+      "tasks": [
+        "ImageNet"
+      ],
+      "task_match": [
+        "ImageNet"
+      ],
+      "n_subjects": 19
+    },
+    {
+      "ds": "ds005876",
+      "name": "Song Familiarity",
+      "matched_keywords": [],
+      "tasks": [
+        "songfamiliarity"
+      ],
+      "task_match": [
+        "songfamiliarity"
+      ],
+      "n_subjects": 29
+    },
+    {
+      "ds": "ds006035",
+      "name": "somatomotor",
+      "matched_keywords": [
+        "left hand"
+      ],
+      "tasks": [
+        "somatomotor"
+      ],
+      "task_match": [
+        "somatomotor"
+      ],
+      "n_subjects": 5
+    },
+    {
+      "ds": "ds006040",
+      "name": "Sustained Attention Task (gradCPT) Dataset using simultaneous EEG-fMRI and DTI",
+      "matched_keywords": [],
+      "tasks": [
+        "CB",
+        "CBOFF",
+        "CBON",
+        "EC",
+        "ECOFF",
+        "ECON",
+        "EO",
+        "EOOFF",
+        "EOON",
+        "GRAD",
+        "GRADOFF",
+        "GRADON",
+        "IMAG",
+        "IMAGON",
+        "IMGRAD",
+        "IMGRADON"
+      ],
+      "task_match": [
+        "IMAG",
+        "IMAGON"
+      ],
+      "n_subjects": 28
+    },
+    {
+      "ds": "ds006126",
+      "name": "TDCS Modulation of Visual Cortex in Motor Imagery",
+      "matched_keywords": [
+        "motor imagery",
+        "left hand",
+        "right hand"
+      ],
+      "tasks": [
+        "B1",
+        "B2",
+        "BM",
+        "KI",
+        "V1",
+        "V3"
+      ],
+      "task_match": [],
+      "n_subjects": 5
+    },
+    {
+      "ds": "ds006465",
+      "name": "3M-CPSEED\uff1aAn EEG-based Dataset for Chinese Pinyin Production in Overt, Silent-intended, and Imagined Speech",
+      "matched_keywords": [],
+      "tasks": [
+        "imaginedspeech"
+      ],
+      "task_match": [
+        "imaginedspeech"
+      ],
+      "n_subjects": 20
+    },
+    {
+      "ds": "ds006502",
+      "name": "Skill learning and consolidation in healthy humans",
+      "matched_keywords": [
+        "left hand"
+      ],
+      "tasks": [
+        "control",
+        "rest",
+        "retest",
+        "training"
+      ],
+      "task_match": [],
+      "n_subjects": 31
+    },
+    {
+      "ds": "ds006563",
+      "name": "Dimension-based attention modulates early visual processing",
+      "matched_keywords": [],
+      "tasks": [
+        "DimensionDiscrimination"
+      ],
+      "task_match": [
+        "DimensionDiscrimination"
+      ],
+      "n_subjects": 12
+    },
+    {
+      "ds": "ds006576",
+      "name": "The role of REM sleep in neural differentiation of memories in the hippocampus",
+      "matched_keywords": [],
+      "tasks": [
+        "decision",
+        "familiarization",
+        "localizer",
+        "postfaces",
+        "postscenes",
+        "rest",
+        "reward",
+        "study"
+      ],
+      "task_match": [
+        "familiarization"
+      ],
+      "n_subjects": 49
+    },
+    {
+      "ds": "ds006848",
+      "name": "AlphaDirection1: EEG, ECG, PPG in the resting state and working memory for sequentially and simultaneously presented dig",
+      "matched_keywords": [
+        "right hand"
+      ],
+      "tasks": [
+        "rest",
+        "verbalwm"
+      ],
+      "task_match": [],
+      "n_subjects": 30
+    },
+    {
+      "ds": "ds006945",
+      "name": "Structural MRI and fMRI of Participants Performing Kinesthetic Motor Imagery of Walking vs. Standing While Viewing a Fir",
+      "matched_keywords": [
+        "motor imagery"
+      ],
+      "tasks": [
+        "baseline",
+        "walking1",
+        "walking2"
+      ],
+      "task_match": [],
+      "n_subjects": 5
+    },
+    {
+      "ds": "ds006963",
+      "name": "Motor Control Processes Moderate Visual Working Memory Gating Dataset",
+      "matched_keywords": [],
+      "tasks": [
+        "VisuomotorDelayedMatchToSampleWithInterference"
+      ],
+      "task_match": [
+        "VisuomotorDelayedMatchToSampleWithInterference"
+      ],
+      "n_subjects": 32
+    },
+    {
+      "ds": "ds007172",
+      "name": "EEG-Asymmetries Dataset",
+      "matched_keywords": [
+        "left hand",
+        "right hand"
+      ],
+      "tasks": [
+        "emotions",
+        "faces",
+        "houses",
+        "rest",
+        "words"
+      ],
+      "task_match": [],
+      "n_subjects": 100
+    },
+    {
+      "ds": "ds007216",
+      "name": "A multi-session simultaneous EEG-fMRI dataset with online experience sampling",
+      "matched_keywords": [
+        "right hand"
+      ],
+      "tasks": [
+        "ExperienceSampling",
+        "GradCPT"
+      ],
+      "task_match": [],
+      "n_subjects": 24
+    },
+    {
+      "ds": "ds007221",
+      "name": "Cross-Environment Multi-Paradigm Motor Imagery EEG Dataset",
+      "matched_keywords": [
+        "motor imagery"
+      ],
+      "tasks": [
+        "graz"
+      ],
+      "task_match": [],
+      "n_subjects": 84
+    },
+    {
+      "ds": "ds007222",
+      "name": "Visual Occlusions with Treadmill Walking Speeds EEG",
+      "matched_keywords": [],
+      "tasks": [
+        "treadmill00flow00",
+        "treadmill04flow00",
+        "treadmill08flow00",
+        "treadmill12flow00",
+        "treadmill16flow00"
+      ],
+      "task_match": [
+        "treadmill00flow00",
+        "treadmill04flow00",
+        "treadmill08flow00",
+        "treadmill12flow00",
+        "treadmill16flow00"
+      ],
+      "n_subjects": 15
+    },
+    {
+      "ds": "ds007314",
+      "name": "tACS for Patients with Post-Stroke Anomia",
+      "matched_keywords": [],
+      "tasks": [
+        "PictureNaming"
+      ],
+      "task_match": [
+        "PictureNaming"
+      ],
+      "n_subjects": 2
+    },
+    {
+      "ds": "ds007315",
+      "name": "tACS for Patients with Post-Stroke Anomia",
+      "matched_keywords": [],
+      "tasks": [
+        "PictureNaming"
+      ],
+      "task_match": [
+        "PictureNaming"
+      ],
+      "n_subjects": 2
+    },
+    {
+      "ds": "ds007554",
+      "name": "Multimodal dataset from the CMx7-MM Experiment",
+      "matched_keywords": [
+        "motor imagery",
+        "sensorimotor"
+      ],
+      "tasks": [
+        "activemotor",
+        "full",
+        "mentalarithmetic",
+        "motorimagery",
+        "nback",
+        "nbackarithmetic",
+        "passivemotor"
+      ],
+      "task_match": [
+        "activemotor",
+        "motorimagery",
+        "passivemotor"
+      ],
+      "n_subjects": 30
+    },
+    {
+      "ds": "ds007591",
+      "name": "Delineating neural contributions to EEG-based speech decoding",
+      "matched_keywords": [],
+      "tasks": [
+        "covert",
+        "minimallyovert",
+        "overt"
+      ],
+      "task_match": [
+        "minimallyovert"
+      ],
+      "n_subjects": 3
+    },
+    {
+      "ds": "ds007629",
+      "name": "ROAMM",
+      "matched_keywords": [],
+      "tasks": [
+        "ReMind"
+      ],
+      "task_match": [
+        "ReMind"
+      ],
+      "n_subjects": 1
+    },
+    {
+      "ds": "ds007788",
+      "name": "Dataset: EEG-Controlled Exoskeleton for Walking and Standing - A Longitudinal Study of Healthy Individuals",
+      "matched_keywords": [
+        "motor imagery"
+      ],
+      "tasks": [
+        "stop6min",
+        "training",
+        "trial01",
+        "trial02",
+        "trial03",
+        "trial04",
+        "trial05",
+        "trial06",
+        "trial07",
+        "trial08",
+        "trial09",
+        "trial10",
+        "trial11",
+        "trial12",
+        "walk6min"
+      ],
+      "task_match": [
+        "stop6min",
+        "walk6min"
+      ],
+      "n_subjects": 7
+    },
+    {
+      "ds": "ds007827",
+      "name": "Loneliness EEG - Roving Oddball Task",
+      "matched_keywords": [],
+      "tasks": [
+        "ImageRatings",
+        "RovingOddball"
+      ],
+      "task_match": [
+        "ImageRatings"
+      ],
+      "n_subjects": 99
+    },
+    {
+      "ds": "ds007949",
+      "name": "Auditory Streaming and Interoception",
+      "matched_keywords": [],
+      "tasks": [
+        "discrimination",
+        "streaming"
+      ],
+      "task_match": [
+        "discrimination",
+        "streaming"
+      ],
+      "n_subjects": 22
+    }
+  ],
+  "finished": "2026-07-22T17:35:38"
+}
