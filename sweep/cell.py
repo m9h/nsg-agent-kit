@@ -120,6 +120,24 @@ def run_eegnet(X, y, tr, te, n_classes):
 
 def run_reve(X, y, tr, te, ch_names, n_classes):
     import numpy as np, torch
+    import importlib.metadata as _md
+    # transformers gates on torch detection at import; force it and capture why it may fail.
+    os.environ["USE_TORCH"] = "1"
+    RESULT["diag_torch_version"] = torch.__version__
+    try:
+        RESULT["diag_meta_torch"] = _md.version("torch")
+    except Exception as e:
+        RESULT["diag_meta_torch"] = repr(e)
+        # make torch's dist-info discoverable to importlib.metadata: add the system site-packages
+        # (where the read-only-venv torch lives) explicitly to the front of sys.path.
+        import torch as _t
+        sp = os.path.dirname(os.path.dirname(_t.__file__))  # .../site-packages
+        if sp not in sys.path:
+            sys.path.insert(0, sp)
+    import transformers
+    from transformers.utils import is_torch_available
+    RESULT["diag_transformers"] = transformers.__version__
+    RESULT["diag_is_torch_available"] = bool(is_torch_available())
     from transformers import AutoModel
     dev = "cuda" if torch.cuda.is_available() else "cpu"
     RESULT["device"] = dev
@@ -158,7 +176,10 @@ def main():
     # ("Could not infer dtype of numpy.float32"; transformers then can't detect torch).
     deps = ["numpy<2", "moabb", "scikit-learn"]
     if MODEL == "reve":
-        deps += ["transformers", "huggingface_hub", "safetensors", "einops"]
+        # transformers 5.x drops torch<2.x (is_torch_available()->False on the image's 2.0.1).
+        # Pin a 4.x line that still supports torch 2.0.1. If REVE's remote code needs transformers 5,
+        # this route is blocked by the torch-2.0.1 ceiling -> Apptainer (see docs/LIMITATIONS.md).
+        deps += ["transformers==4.44.2", "huggingface_hub", "safetensors", "einops"]
     ok, secs, err = pip(deps)
     RESULT["pip_ok"] = ok; RESULT["pip_seconds"] = secs
     if not ok:
