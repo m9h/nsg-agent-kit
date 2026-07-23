@@ -153,7 +153,10 @@ def run_reve(X, y, tr, te, ch_names, n_classes):
 
 
 def main():
-    deps = ["moabb", "scikit-learn"]
+    # Pin numpy<2: the image's torch 2.0.1 was built against numpy 1.x, and moabb/transformers
+    # otherwise pull numpy 2.x into the target dir, shadowing the image numpy and breaking torch
+    # ("Could not infer dtype of numpy.float32"; transformers then can't detect torch).
+    deps = ["numpy<2", "moabb", "scikit-learn"]
     if MODEL == "reve":
         deps += ["transformers", "huggingface_hub", "safetensors", "einops"]
     ok, secs, err = pip(deps)

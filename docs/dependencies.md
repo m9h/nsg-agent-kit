@@ -15,6 +15,13 @@ job.** Design for offline. Three strategies, cheapest first.
 > libs). **Install deps into node-local scratch outside the returned dir** (`$TMPDIR/nsgkit-pylibs`),
 > or delete the target before the script exits. `entry.sh` does the former.
 
+> **numpy 2 breaks the image torch (measured).** The image's **torch 2.0.1 was built against numpy
+> 1.x**. If a dependency you install (moabb, transformers, …) pulls **numpy 2.x** into your target
+> dir, it shadows the image numpy and torch dies with `RuntimeError: Could not infer dtype of
+> numpy.float32` (and `transformers` then reports "AutoModel requires the PyTorch library" because its
+> torch probe fails). **Pin `numpy<2`** in any torch job's install. (JAX is the opposite — it *wants*
+> numpy≥1.25; keep torch and jax jobs separate, which they already are.)
+
 ## JAX on NSG — confirmed working (jax 0.10.2, GPU)
 
 The PyTorch tool is a fine base for JAX too (driver 580.82.07, V100). Recipe that works:
