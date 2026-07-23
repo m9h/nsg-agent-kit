@@ -44,8 +44,12 @@ def pip(pkgs):
 def load_data():
     """Return X (n,C,T) float32 @200Hz, y (int), ch_names, sessions (array), class_names."""
     import numpy as np
-    os.environ.setdefault("MNE_DATA", os.path.join(LIBS, "..", "mne_data"))
-    os.environ.setdefault("MOABB_RESULTS", os.path.join(LIBS, "..", "moabb_res"))
+    scratch = os.environ.get("TMPDIR", "/tmp")
+    data_dir = os.path.join(scratch, "mne_data")
+    os.makedirs(data_dir, exist_ok=True)
+    os.makedirs(os.path.join(scratch, "moabb_res"), exist_ok=True)
+    os.environ["MNE_DATA"] = data_dir
+    os.environ["MOABB_RESULTS"] = os.path.join(scratch, "moabb_res")
     if SOURCE == "moabb":
         import moabb
         from moabb.paradigms import MotorImagery
