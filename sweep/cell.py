@@ -168,12 +168,7 @@ def run_reve(X, y, tr, te, ch_names, n_classes):
         pos = positions.expand(xt.size(0), -1, -1)
         with torch.no_grad():
             out = reve(xt, pos)
-        t = getattr(out, "last_hidden_state", out)
-        if isinstance(t, (tuple, list)):
-            t = t[0]
-        if t.ndim == 3:
-            t = t.mean(1)
-        return t.float().cpu().numpy()
+        return _pool_tokens(out).float().cpu().numpy()
 
     Xz = ((X - X.mean(2, keepdims=True)) / (X.std(2, keepdims=True) + 1e-7)).astype("float32")
     embs = np.concatenate([embed(Xz[i:i + 64]) for i in range(0, len(Xz), 64)], 0)
@@ -243,11 +238,7 @@ def run_lora(X, y, tr, te, ch_names, n_classes):
             pos = positions.expand(len(b), -1, -1)
             opt.zero_grad()
             out = reve(Xt[b], pos)
-            h = getattr(out, "last_hidden_state", out)
-            if isinstance(h, (tuple, list)):
-                h = h[0]
-            if h.ndim == 3:
-                h = h.mean(1)
+            h = _pool_tokens(out)
             loss = lf(head(h), yt[b])
             loss.backward(); opt.step()
         sched.step()
@@ -261,11 +252,7 @@ def run_lora(X, y, tr, te, ch_names, n_classes):
             b = torch.tensor(te_idx[i:i + 32]).to(dev)
             pos = positions.expand(len(b), -1, -1)
             out = reve(Xt[b], pos)
-            h = getattr(out, "last_hidden_state", out)
-            if isinstance(h, (tuple, list)):
-                h = h[0]
-            if h.ndim == 3:
-                h = h.mean(1)
+            h = _pool_tokens(out)
             preds.append(head(h).argmax(1).cpu().numpy())
     return np.concatenate(preds)
 
@@ -283,6 +270,17 @@ def _hidden_dim(peft_model):
         if hasattr(inner.config, name):
             return getattr(inner.config, name)
     return 512  # brain-bzh/reve-base default width, fallback only
+
+
+def _pool_tokens(out):
+    """REVE returns a token embedding with shape (B, ..., D) — 3-D (B, tokens, D) or 4-D
+    (B, channels, patches, D). Mean-pool every middle dim to (B, D)."""
+    t = getattr(out, "last_hidden_state", out)
+    if isinstance(t, (tuple, list)):
+        t = t[0]
+    if t.ndim > 2:
+        t = t.mean(dim=tuple(range(1, t.ndim - 1)))
+    return t
 
 
 def capture_env():
