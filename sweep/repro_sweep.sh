@@ -2,7 +2,8 @@
 # Fan out the REVE paper-reproduction cell across BCI IV 2a subjects, poll, fetch, aggregate.
 # Usage:  ./repro_sweep.sh "1 2 3 4 5 6 7 8 9"     (default: all 9)
 # Requires: nsgr/config.env + ~/.nsg_secret.env sourced (creds), sweep/reve_weights vendored.
-set -euo pipefail
+# no `set -e`: this polls NSG for hours; a transient curl non-zero must not kill the run.
+set -uo pipefail
 cd "$(dirname "$0")/.."
 source nsgr/config.env; source ~/.nsg_secret.env
 SUBJECTS="${1:-1 2 3 4 5 6 7 8 9}"
