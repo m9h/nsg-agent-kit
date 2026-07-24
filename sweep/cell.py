@@ -301,7 +301,10 @@ def main():
     # Pin numpy<2: the image's torch 2.0.1 was built against numpy 1.x, and moabb/transformers
     # otherwise pull numpy 2.x into the target dir, shadowing the image numpy and breaking torch
     # ("Could not infer dtype of numpy.float32"; transformers then can't detect torch).
-    deps = ["numpy<2", "moabb", "scikit-learn"]
+    # Force a fresh, ABI-matched pandas alongside numpy<2 -- otherwise moabb can resolve a pandas
+    # whose compiled C extension was built against a different numpy ABI than what's now in LIBS
+    # (observed: "C extension: None not built" at import time on a torch-override lora run).
+    deps = ["numpy<2", "pandas", "moabb", "scikit-learn"]
     # Optional torch override into the target dir (shadows the image's pinned 2.0.1). REVE's model
     # code imports torch.nn.attention (needs torch>=2.1), which 2.0.1 lacks. PyPI torch 2.4.1 is a
     # cu121 build that HAS torch.nn.attention AND still ships Volta/sm_70 kernels for the V100.

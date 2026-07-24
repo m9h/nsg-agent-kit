@@ -215,3 +215,52 @@ doesn't pull cu130. This keeps REVE/LoRA on the gateway — **no Apptainer neede
 So the real ceiling is narrower than "torch 2.0.1": REVE/LoRA need **torch ≥2.1**, satisfied by
 installing **torch 2.4.1 (cu121)** into the target. Only a dep that needs newer **CUDA** than the
 driver, or torch that has dropped Volta, would force Apptainer.
+
+## 7. M5 GREEN: LoRA-REVE cell succeeds on NSG (2026-07-24)
+
+Coordinator correction (superseding this doc's §6 "platform gap" conclusion): the CUDA-kernel
+error was **our own unconstrained pip install shadowing the base image's torch with a
+Volta-incompatible wheel** (`2.13.0+cu130`), not NSG silently upgrading the tool image. Fix:
+pin **torch==2.4.1+cu121** explicitly (still ships sm_70/Volta kernels, has `torch.nn.attention`,
+matches the node's 580.x driver) via `cell.json`'s `torch` override key, installed as part of the
+same `pip install --target LIBS` call so later installs (transformers/peft/etc.) see it already
+satisfied. **Verified directly, not assumed**: `gpu_capability: [7, 0]` (V100/Volta, correct),
+`cuda_kernel_smoketest_ok: true` (an actual `x @ x` on `cuda:0` before proceeding).
+
+One more real blocker after the torch fix: a pandas C-extension/numpy-ABI mismatch
+(`ImportError: C extension: None not built`) — fixed by explicitly listing `pandas` alongside
+`numpy<2` in the same install call, rather than letting moabb's transitive resolution pick a
+mismatched one.
+
+**Note on process**: this fix was developed in parallel by two independent efforts (this session's
+DGX-Spark-coordinated work, and a separate concurrent session that pushed `72d32f3`/`d4669a9` with
+its own `torch_override` mechanism, vendored REVE weights avoiding HF gating, and a `_pool_tokens`
+fix for REVE's 4-D output) — both independently converged on **torch==2.4.1+cu121** as the fix,
+which is itself a second, independent confirmation the diagnosis was right. Reconciled by rebasing
+onto the concurrent work and adding only the one still-missing piece (the pandas pin) rather than
+redoing already-solved work.
+
+**Real, complete M5 result** (job `NGBW-JOB-PYTORCH_PY_EXPANSE-D14CA47B343C4733A5B4A3F38CC46D70`,
+BNCI2014_001 subject 1, session-holdout 288 train/288 test):
+
+| | value |
+|---|---|
+| trainable / total params | 5,758,016 / 74,947,648 (7.68%) |
+| final train loss | 0.000686 |
+| test_balanced_accuracy | **0.5104** |
+| chance | 0.25 |
+| cell_ok | true |
+
+**Caveat before comparing to the local DGX reference**: this is a **single-subject, session-holdout**
+split (one subject's train session vs. their own test session), not the DGX/`open-eeg-bench`
+harness's full-cohort, subject-disjoint split used for the `bcic2a` OpenEEGBench submission numbers
+(`docs/oeb_lora_reve_submission.md` in `emeg-fm`, DGX raw test_balanced_accuracy 0.5926 for the
+r=16/attention-only config on the full multi-subject dataset). Different eval unit, not a strict
+apples-to-apples comparison — but both show the same qualitative result: LoRA-REVE (same core
+method: attention+FFN LoRA targets, AdamW) clearly beats chance by a wide margin on the same
+underlying raw dataset (BCI Competition IV 2a), on two independent hardware/software stacks (DGX
+26.06/CUDA13 vs NSG Expanse V100/CUDA12.1).
+
+M5 gate (`docs/ROADMAP.md`): **substantively met** for one cell — a real LoRA-REVE result,
+reproduced end-to-end on NSG's free GPU, cross-hardware-validating the core method (not a strict
+numeric match to the DGX cell, which used a different split protocol).
