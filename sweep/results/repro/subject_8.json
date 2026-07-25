@@ -1,0 +1,38 @@
+{
+  "schema": "nsg-agent-kit/repro-reve/v1",
+  "started": "2026-07-24T09:03:01",
+  "dataset": "BNCI2014_001",
+  "subject": 8,
+  "protocol": "linear-probe+LoRA",
+  "preproc": "bp0.5-99.5,resample200,across-session-zscore",
+  "paper_target": 0.6396,
+  "env": {
+    "python": "3.11.4",
+    "nvidia_smi": "580.82.07, Tesla V100-SXM2-32GB",
+    "torch": "2.4.1+cu121"
+  },
+  "pip_ok": true,
+  "pip_seconds": 107.2,
+  "device": "cuda",
+  "n_trials": 576,
+  "n_channels": 22,
+  "n_times": 801,
+  "n_classes": 4,
+  "classes": [
+    "feet",
+    "left_hand",
+    "right_hand",
+    "tongue"
+  ],
+  "n_train": 288,
+  "n_test": 288,
+  "reve_source": "vendored",
+  "embedding_dim": 512,
+  "lora_trainable_params": 5758016,
+  "final_train_loss": 0.00012069212243659422,
+  "test_accuracy": 0.4688,
+  "test_balanced_accuracy": 0.4688,
+  "chance": 0.25,
+  "delta_vs_paper": -0.1708,
+  "finished": "2026-07-24T09:06:01"
+}

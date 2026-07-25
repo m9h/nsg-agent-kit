@@ -1,0 +1,10 @@
+{
+  "n_subjects_scored": 9,
+  "n_subjects_total": 9,
+  "reve_mean_balanced_accuracy": 0.4348,
+  "reve_std": 0.1184,
+  "paper_reve_base": 0.6396,
+  "paper_std": 0.0095,
+  "delta_vs_paper": -0.2048,
+  "failed_subjects": []
+}
