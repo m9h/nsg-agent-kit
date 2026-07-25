@@ -30,8 +30,9 @@ SUBJECT = int(CFG.get("subject", 1))
 TORCH_OVERRIDE = CFG.get("torch", "2.4.1")
 PAPER_TARGET = 0.6396  # REVE-Base BCI-IV-2a balanced accuracy (paper Table 2)
 
-RESULT = {"schema": "nsg-agent-kit/repro-reve/v1", "started": time.strftime("%Y-%m-%dT%H:%M:%S"),
-          "dataset": DATASET, "subject": SUBJECT, "protocol": "linear-probe+LoRA",
+RESULT = {"schema": "nsg-agent-kit/repro-reve/v2", "started": time.strftime("%Y-%m-%dT%H:%M:%S"),
+          "dataset": DATASET, "subject": SUBJECT,
+          "protocol": "linear-probe+LoRA (val-early-stop, warmup+cosine, gradclip, labelsmooth)",
           "preproc": "bp0.5-99.5,resample200,across-session-zscore", "paper_target": PAPER_TARGET}
 LIBS = os.path.join(os.environ.get("TMPDIR", "/tmp"), "nsgkit-pylibs")
 
@@ -137,63 +138,118 @@ def train_reve_lora(X, y, tr, te, ch_names, n_classes, dev, RES):
     if isinstance(positions, torch.Tensor):
         positions = positions.to(dev)
 
+    import copy, math
+    try:
+        from peft import get_peft_model_state_dict, set_peft_model_state_dict
+    except Exception:
+        from peft.utils import get_peft_model_state_dict, set_peft_model_state_dict
+    torch.manual_seed(0)
+
     Xt = torch.tensor(X).to(dev)
     yt = torch.tensor(y).to(dev)
     rng = np.random.RandomState(0)
+    tr = np.asarray(tr); te = np.asarray(te)
+
+    # stratified train/val split off the training session (val = 20%) for early stopping
+    val = []
+    for c in range(n_classes):
+        ic = tr[y[tr] == c].copy(); rng.shuffle(ic)
+        val.extend(ic[:max(1, int(round(0.2 * len(ic))))].tolist())
+    val = np.array(sorted(val)); vs = set(val.tolist())
+    trn = np.array([i for i in tr if i not in vs])
+    RES["n_train_fit"], RES["n_val"] = int(len(trn)), int(len(val))
 
     def fwd(idx):
         pos = positions.expand(len(idx), -1, -1)
         return pool_tokens(reve(Xt[idx], pos))
 
-    # infer hidden dim
+    def bacc(pred, yy):
+        recs = [float((pred[yy == c] == c).mean()) for c in range(n_classes) if (yy == c).sum()]
+        return sum(recs) / len(recs)
+
+    def evaluate(idx):
+        reve.eval(); head.eval()
+        out = []
+        with torch.no_grad():
+            for i in range(0, len(idx), 32):
+                b = torch.tensor(idx[i:i + 32]).to(dev)
+                out.append(head(fwd(b)).argmax(1).cpu().numpy())
+        p = np.concatenate(out)
+        return p, bacc(p, y[idx])
+
     with torch.no_grad():
-        hid = fwd(torch.tensor(tr[:2]).to(dev)).shape[1]
+        hid = fwd(torch.tensor(trn[:2]).to(dev)).shape[1]
     RES["embedding_dim"] = int(hid)
     head = nn.Linear(hid, n_classes).to(dev)
-    lossf = nn.CrossEntropyLoss()
+    lossf = nn.CrossEntropyLoss(label_smoothing=0.1)
 
-    # --- Phase A: linear-probe warmup (encoder frozen) ---
+    # --- Phase A: linear probe on CACHED frozen embeddings (fast, stable head init) ---
     for p in reve.parameters():
         p.requires_grad_(False)
-    optA = torch.optim.AdamW(head.parameters(), lr=1e-3)
-    for _ in range(int(os.environ.get("PROBE_EPOCHS", 20))):
-        perm = rng.permutation(tr)
+    reve.eval()
+    with torch.no_grad():
+        emb = torch.cat([fwd(torch.tensor(tr[i:i + 32]).to(dev)) for i in range(0, len(tr), 32)])
+    pos_of = {int(t): k for k, t in enumerate(tr)}
+    E_trn = emb[[pos_of[i] for i in trn]]; y_trn = yt[trn]
+    E_val = emb[[pos_of[i] for i in val]]
+    optA = torch.optim.AdamW(head.parameters(), lr=1e-3, weight_decay=1e-2)
+    best_hv, best_head = -1.0, None
+    for _ in range(80):
+        head.train(); perm = rng.permutation(len(E_trn))
         for i in range(0, len(perm), 32):
             b = torch.tensor(perm[i:i + 32]).to(dev)
-            with torch.no_grad():
-                h = fwd(b)
-            optA.zero_grad(); lossf(head(h), yt[b]).backward(); optA.step()
+            optA.zero_grad(); lossf(head(E_trn[b]), y_trn[b]).backward(); optA.step()
+        head.eval()
+        with torch.no_grad():
+            v = bacc(head(E_val).argmax(1).cpu().numpy(), y[val])
+        if v > best_hv:
+            best_hv, best_head = v, copy.deepcopy(head.state_dict())
+    head.load_state_dict(best_head)
+    RES["probe_val_bacc"] = round(best_hv, 4)
 
-    # --- Phase B: LoRA fine-tune (attention + FFN) + head ---
-    lora_cfg = LoraConfig(r=32, lora_alpha=64, lora_dropout=0.05,
+    # --- Phase B: LoRA fine-tune, warmup+cosine LR, grad-clip, early stop on val ---
+    lora_cfg = LoraConfig(r=32, lora_alpha=64, lora_dropout=0.1,
                           target_modules=["to_qkv", "to_out", "net.1", "net.3"], bias="none")
     reve = get_peft_model(reve, lora_cfg)
-    tr_p = sum(p.numel() for p in reve.parameters() if p.requires_grad)
-    RES["lora_trainable_params"] = int(tr_p)
+    RES["lora_trainable_params"] = int(sum(p.numel() for p in reve.parameters() if p.requires_grad))
     params = [p for p in reve.parameters() if p.requires_grad] + list(head.parameters())
-    n_epochs = int(os.environ.get("LORA_EPOCHS", 30))
-    opt = torch.optim.AdamW(params, lr=5e-4, weight_decay=1e-2)
-    sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=n_epochs)
-    reve.train(); head.train()
-    for _ep in range(n_epochs):
-        perm = rng.permutation(tr)
+    max_ep = int(os.environ.get("LORA_EPOCHS", 60)); warmup = 5; base_lr = 2e-4
+    opt = torch.optim.AdamW(params, lr=base_lr, weight_decay=1e-2)
+
+    def lr_scale(ep):
+        if ep < warmup:
+            return (ep + 1) / warmup
+        return 0.5 * (1 + math.cos(math.pi * (ep - warmup) / max(1, max_ep - warmup)))
+
+    best_vv, best_state, bad, patience = -1.0, None, 0, 15
+    loss = None
+    for ep in range(max_ep):
+        for g in opt.param_groups:
+            g["lr"] = base_lr * lr_scale(ep)
+        reve.train(); head.train(); perm = rng.permutation(trn)
         for i in range(0, len(perm), 16):
             b = torch.tensor(perm[i:i + 16]).to(dev)
-            opt.zero_grad(); loss = lossf(head(fwd(b)), yt[b]); loss.backward(); opt.step()
-        sched.step()
-    RES["final_train_loss"] = float(loss.item())
+            opt.zero_grad(); loss = lossf(head(fwd(b)), yt[b]); loss.backward()
+            torch.nn.utils.clip_grad_norm_(params, 1.0); opt.step()
+        _, vv = evaluate(val)
+        if vv > best_vv + 1e-4:
+            best_vv, bad = vv, 0
+            best_state = {"head": copy.deepcopy(head.state_dict()),
+                          "lora": copy.deepcopy(get_peft_model_state_dict(reve))}
+        else:
+            bad += 1
+            if bad >= patience:
+                break
+    RES["lora_val_bacc"] = round(best_vv, 4)
+    RES["lora_epochs_ran"] = ep + 1
+    RES["final_train_loss"] = float(loss.item()) if loss is not None else None
+    if best_state is not None:
+        head.load_state_dict(best_state["head"])
+        set_peft_model_state_dict(reve, best_state["lora"])
 
-    reve.eval(); head.eval()
-    preds = []
-    with torch.no_grad():
-        for i in range(0, len(te), 32):
-            b = torch.tensor(te[i:i + 32]).to(dev)
-            preds.append(head(fwd(b)).argmax(1).cpu().numpy())
-    pred = np.concatenate(preds)
+    pred, test_bacc = evaluate(te)
     yte = y[te]
-    acc = float((pred == yte).mean())
-    recs = [float((pred[yte == c] == c).mean()) for c in range(n_classes) if (yte == c).sum()]
-    return acc, sum(recs) / len(recs)
+    return float((pred == yte).mean()), test_bacc
 
 
 def _write():
