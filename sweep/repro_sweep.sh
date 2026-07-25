@@ -14,7 +14,7 @@ echo "== submit =="
 for s in $SUBJECTS; do
   stage="repro_s$s"; rm -rf "/tmp/$stage" "/tmp/$stage.zip"; mkdir -p "/tmp/$stage"
   cp sweep/repro_cell.py "/tmp/$stage/run.py"
-  echo "{\"dataset\":\"BNCI2014_001\",\"subject\":$s,\"torch\":\"2.4.1\"}" > "/tmp/$stage/cell.json"
+  echo "{\"dataset\":\"BNCI2014_001\",\"subject\":$s,\"torch\":\"2.4.1\",\"split\":\"${SPLIT:-session}\",\"norm\":\"${NORM:-per-session}\"}" > "/tmp/$stage/cell.json"
   cp -r sweep/reve_weights/reve-base sweep/reve_weights/reve-positions "/tmp/$stage/"
   ( cd /tmp && zip -qr "$stage.zip" "$stage" )
   h=$(curl -sS -m 300 -u "$NSG_USER:$NSG_PASSWORD" -H "cipres-appkey:$NSG_APPKEY" \

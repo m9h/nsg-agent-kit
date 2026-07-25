@@ -30,9 +30,10 @@ SUBJECT = int(CFG.get("subject", 1))
 TORCH_OVERRIDE = CFG.get("torch", "2.4.1")
 PAPER_TARGET = 0.6396  # REVE-Base BCI-IV-2a balanced accuracy (paper Table 2)
 
-NORM = CFG.get("norm", "per-session")  # per-session | train | global
-RESULT = {"schema": "nsg-agent-kit/repro-reve/v3", "started": time.strftime("%Y-%m-%dT%H:%M:%S"),
-          "dataset": DATASET, "subject": SUBJECT, "norm": NORM,
+NORM = CFG.get("norm", "per-session")   # per-session | train | global
+SPLIT = CFG.get("split", "session")     # session (S1 train/S2 test) | pooled (random 80/20)
+RESULT = {"schema": "nsg-agent-kit/repro-reve/v4", "started": time.strftime("%Y-%m-%dT%H:%M:%S"),
+          "dataset": DATASET, "subject": SUBJECT, "norm": NORM, "split": SPLIT,
           "protocol": "linear-probe+LoRA (val-early-stop, warmup+cosine, gradclip, labelsmooth)",
           "preproc": f"bp0.5-99.5,resample200,{NORM}-zscore", "paper_target": PAPER_TARGET}
 LIBS = os.path.join(os.environ.get("TMPDIR", "/tmp"), "nsgkit-pylibs")
@@ -102,8 +103,16 @@ def main():
     classes = sorted(set(y))
     yi = np.array([classes.index(v) for v in y], dtype="int64")
     uniq = sorted(set(sessions))
-    tr = np.where(sessions == uniq[0])[0]
-    te = np.where(sessions != uniq[0])[0] if len(uniq) > 1 else tr
+    if SPLIT == "pooled":
+        # combine both sessions, stratified random 80/20 -> removes cross-session transfer challenge
+        _rng = np.random.RandomState(0); trl, tel = [], []
+        for c in range(len(classes)):
+            ic = np.where(yi == c)[0].copy(); _rng.shuffle(ic)
+            k = int(round(0.8 * len(ic))); trl += ic[:k].tolist(); tel += ic[k:].tolist()
+        tr = np.array(sorted(trl)); te = np.array(sorted(tel))
+    else:  # session: S1 train / S2 test (standard BCI 2a benchmark, harder)
+        tr = np.where(sessions == uniq[0])[0]
+        te = np.where(sessions != uniq[0])[0] if len(uniq) > 1 else tr
     RESULT.update(n_trials=int(len(yi)), n_channels=int(X.shape[1]), n_times=int(X.shape[2]),
                   n_classes=len(classes), classes=classes, n_train=int(len(tr)), n_test=int(len(te)))
 
