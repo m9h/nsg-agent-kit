@@ -30,10 +30,11 @@ SUBJECT = int(CFG.get("subject", 1))
 TORCH_OVERRIDE = CFG.get("torch", "2.4.1")
 PAPER_TARGET = 0.6396  # REVE-Base BCI-IV-2a balanced accuracy (paper Table 2)
 
-RESULT = {"schema": "nsg-agent-kit/repro-reve/v2", "started": time.strftime("%Y-%m-%dT%H:%M:%S"),
-          "dataset": DATASET, "subject": SUBJECT,
+NORM = CFG.get("norm", "per-session")  # per-session | train | global
+RESULT = {"schema": "nsg-agent-kit/repro-reve/v3", "started": time.strftime("%Y-%m-%dT%H:%M:%S"),
+          "dataset": DATASET, "subject": SUBJECT, "norm": NORM,
           "protocol": "linear-probe+LoRA (val-early-stop, warmup+cosine, gradclip, labelsmooth)",
-          "preproc": "bp0.5-99.5,resample200,across-session-zscore", "paper_target": PAPER_TARGET}
+          "preproc": f"bp0.5-99.5,resample200,{NORM}-zscore", "paper_target": PAPER_TARGET}
 LIBS = os.path.join(os.environ.get("TMPDIR", "/tmp"), "nsgkit-pylibs")
 
 
@@ -106,10 +107,23 @@ def main():
     RESULT.update(n_trials=int(len(yi)), n_channels=int(X.shape[1]), n_times=int(X.shape[2]),
                   n_classes=len(classes), classes=classes, n_train=int(len(tr)), n_test=int(len(te)))
 
-    # --- across-session z-score: per-channel stats from the training session ---
-    mu = X[tr].mean(axis=(0, 2), keepdims=True)
-    sd = X[tr].std(axis=(0, 2), keepdims=True) + 1e-7
-    X = ((X - mu) / sd).astype("float32")
+    # --- normalization (the crux for cross-session transfer) ---
+    # per-session: standardize each recording session by its own per-channel stats -> removes the
+    #   session-level scale/offset shift that tanked v2's session-2 test acc (the paper z-scores
+    #   "across recording sessions"). global: pooled stats over all data. train: train-session only.
+    if NORM == "per-session":
+        for s in set(sessions):
+            m = sessions == s
+            mu = X[m].mean(axis=(0, 2), keepdims=True)
+            sd = X[m].std(axis=(0, 2), keepdims=True) + 1e-7
+            X[m] = (X[m] - mu) / sd
+    elif NORM == "global":
+        mu = X.mean(axis=(0, 2), keepdims=True); sd = X.std(axis=(0, 2), keepdims=True) + 1e-7
+        X = (X - mu) / sd
+    else:  # train-session stats only (v2 behaviour)
+        mu = X[tr].mean(axis=(0, 2), keepdims=True); sd = X[tr].std(axis=(0, 2), keepdims=True) + 1e-7
+        X = (X - mu) / sd
+    X = X.astype("float32")
 
     try:
         acc, bacc = train_reve_lora(X, yi, tr, te, ch, len(classes), dev, RESULT)
