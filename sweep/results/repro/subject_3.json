@@ -1,10 +1,11 @@
 {
-  "schema": "nsg-agent-kit/repro-reve/v2",
-  "started": "2026-07-25T13:54:49",
+  "schema": "nsg-agent-kit/repro-reve/v3",
+  "started": "2026-07-25T15:52:53",
   "dataset": "BNCI2014_001",
   "subject": 3,
+  "norm": "per-session",
   "protocol": "linear-probe+LoRA (val-early-stop, warmup+cosine, gradclip, labelsmooth)",
-  "preproc": "bp0.5-99.5,resample200,across-session-zscore",
+  "preproc": "bp0.5-99.5,resample200,per-session-zscore",
   "paper_target": 0.6396,
   "env": {
     "python": "3.11.4",
@@ -12,7 +13,7 @@
     "torch": "2.4.1+cu121"
   },
   "pip_ok": true,
-  "pip_seconds": 118.6,
+  "pip_seconds": 111.8,
   "device": "cuda",
   "n_trials": 576,
   "n_channels": 22,
@@ -35,9 +36,9 @@
   "lora_val_bacc": 0.4464,
   "lora_epochs_ran": 24,
   "final_train_loss": 0.3496292233467102,
-  "test_accuracy": 0.4583,
-  "test_balanced_accuracy": 0.4583,
+  "test_accuracy": 0.4549,
+  "test_balanced_accuracy": 0.4549,
   "chance": 0.25,
-  "delta_vs_paper": -0.1813,
-  "finished": "2026-07-25T13:57:42"
+  "delta_vs_paper": -0.1847,
+  "finished": "2026-07-25T15:55:39"
 }
