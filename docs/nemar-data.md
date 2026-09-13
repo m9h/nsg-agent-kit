@@ -62,3 +62,23 @@ env+GPU+I/O from any data question. Bring real data only once the platform facts
 
 - Browse/search: <https://nemar.org> (data explorer) — each dataset detail page shows its `ds######`.
 - Anything visible on OpenNeuro will appear on NEMAR within ~a day of publication.
+
+## Agent skills
+
+Three skills in `.claude/skills/` package the workflow, with helper scripts in `scripts/`:
+
+| skill | does | cost |
+|---|---|---|
+| **`nemar-search`** | find datasets by keyword / BIDS task / modality / n-subjects | **seconds, local** |
+| **`nemar-inspect`** | verify a dataset actually holds the paradigm you need | seconds, local |
+| **`nemar-job`** | write + submit + fetch an NSG job reading `$NEMARPATH` | hours (queue) |
+
+```bash
+python scripts/nemar_search.py --kw "motor imagery" --modality eeg --min-subjects 10
+python scripts/nemar_inspect.py ds002718
+```
+
+The important one is the cost column: **because NEMAR mirrors OpenNeuro, discovery runs locally
+against OpenNeuro's GraphQL API and never needs an NSG job.** Running a search *as* an NSG job
+means waiting hours in the Expanse queue for information that is free — done once here, and the
+skills exist so it is not repeated.

@@ -94,6 +94,7 @@ New to all this? The gentle version is [`docs/GETTING_STARTED.md`](docs/GETTING_
 | [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md) | The constraints you must abide by |
 | [`docs/dependencies.md`](docs/dependencies.md) | Installing deps (read-only venv, `--target`, numpy/transformers pins, Apptainer/Spack) |
 | [`docs/nemar-data.md`](docs/nemar-data.md) | Reading NEMAR/OpenNeuro data from `$NEMARPATH` |
+| `.claude/skills/` | **Agent skills**: `nemar-search` (find a dataset in seconds, no NSG job), `nemar-inspect` (verify it holds what you need), `nemar-job` (run it on Expanse) |
 | [`docs/tool-params.md`](docs/tool-params.md) | Every tool id + submission parameter (from the public REST API) |
 | [`docs/submit-rest.md`](docs/submit-rest.md) · [`docs/submit-portal.md`](docs/submit-portal.md) | Submitting by REST / by GUI |
 | [`docs/FINDINGS.md`](docs/FINDINGS.md) · [`docs/ROADMAP.md`](docs/ROADMAP.md) | Platform intel · the OpenEEGBench-at-scale target |
