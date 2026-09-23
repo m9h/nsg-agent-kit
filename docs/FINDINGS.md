@@ -1,5 +1,11 @@
 # NSG / Expanse platform findings
 
+> **Re-verified 2026-09-22 — no drift.** torch 2.0.1, Python 3.11.4, driver 580.82.07, V100-32GB,
+> read-only venv and `numpy<2` all still hold on both tools. New: NEMAR is now **552** datasets
+> (was 547); **GPU nodes have 40 cores, not 128**; `nrnivmodl` is absent from the GPU tool;
+> `netpyne 1.0.4.2` is pre-installed on the CPU tool. Full snapshot:
+> [`env-snapshots/2026-09-22.md`](env-snapshots/2026-09-22.md).
+
 *Captured 2026-07-21 for the LoRA-REVE / OpenEEGBench porting decision. Confidence levels are
 explicit so a downstream agent knows what to trust vs. what to probe.*
 
