@@ -15,8 +15,17 @@ before you rely on a specific number).
   Large sweeps (hundreds–thousands of jobs) must be genuinely justified and **batched**, not blasted.
 - **[measured]** **NSG-R rate-limits** submissions per token/tool (HTTP 429 → `error_kind:rate_limited`).
   **Abide by:** submit in controlled batches with back-off; don't fan out a whole matrix at once.
-- **[verify]** Per-user **concurrent/queued job limit** and total **allocation (SU)** — not published.
-  Assume a modest concurrency cap; confirm before scheduling a large sweep.
+- **[measured]** **There is no budget/quota API, and no usage figure anywhere in NSG-R.** Probed
+  2026-09-22: `/usage`, `/account`, `/allocation`, `/quota` all **404**; `/user/<you>` returns only
+  profile fields plus `role`, `active` and **`canSubmit`** — no SUs, no core-hours, no charge. Job
+  records carry timestamps and stages but **no resource-usage fields**. So:
+  - **`canSubmit: true` on `/user/<you>` is the only machine-readable "am I still allowed to run"
+    signal** — worth checking if submissions start failing.
+  - To ask about an actual allocation, use the portal (**My Profile** shows an *XSEDE Allocation*
+    field) or email **nsghelp@sdsc.edu**. NSG holds a pooled community allocation and does not
+    meter per-user SUs back to you.
+  - Practically: NSG is fair-share, not a metered budget. There is nothing to "check" before a run —
+    but that is exactly why the fair-use obligation below is on you rather than enforced by a quota.
 
 ## 2. Hard job-shape limits
 
@@ -91,7 +100,6 @@ before you rely on a specific number).
 Ask `nsghelp@sdsc.edu` / check the authenticated Task page:
 - [ ] Input `.zip` upload size ceiling
 - [ ] Per-user concurrent / queued job limit
-- [ ] Total allocation (SU) and whether GPU-hours are metered
 - [ ] Output size ceiling and result **retention period**
 - [ ] Whether any path persists across jobs (for caching)
 - [ ] Whether a **custom Apptainer image** can be supplied (vs the fixed containerized tools)

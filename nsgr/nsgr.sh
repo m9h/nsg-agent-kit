@@ -13,6 +13,7 @@
 # Usage:
 #   ./nsgr.sh submit <TOOL_ID> <job.zip>
 #   ./nsgr.sh list
+#   ./nsgr.sh whoami            # account status + canSubmit (no budget API exists)
 #   ./nsgr.sh status <JOBHANDLE>
 #   ./nsgr.sh fetch  <JOBHANDLE> <dest_dir>
 set -euo pipefail
@@ -44,6 +45,13 @@ case "$cmd" in
   list)
     curl -sS "${auth[@]}" "$base"
     echo
+    ;;
+  whoami)
+    # NSG exposes NO budget/quota API (checked: /usage /account /allocation /quota all 404).
+    # This profile record is the only machine-readable entitlement signal -- `canSubmit`.
+    curl -sS "${auth[@]}" "${NSG_URL}/user/${NSG_USER}" | tr '>' '>\n' \
+      | grep -E 'username|role|active|canSubmit|institution' | sed 's/<[^>]*>//g' | sed '/^$/d'
+    echo "(NSG has no per-user SU accounting; for allocation questions: nsghelp@sdsc.edu)"
     ;;
   status)
     handle="${1:?job handle, e.g. NGBW-JOB-...}"
