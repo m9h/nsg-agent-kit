@@ -49,6 +49,12 @@ before you rely on a specific number).
 - **[measured]** **numpy compatibility is a tripwire.** The image torch 2.0.1 is built against numpy 1.x;
   a dep that pulls **numpy 2.x** breaks torch (`Could not infer dtype…`). **Pin `numpy<2` for torch
   jobs.** JAX is the opposite (wants numpy ≥1.25) — keep torch and JAX jobs separate.
+- **[measured]** **Pin companions to torch.** Anything that depends on `torchaudio` (braindecode ≥1.6 does)
+  must pin `torchaudio==<torch version>`; an unmatched build imports torch fine and then dies with
+  `undefined symbol: aoti_torch_abi_version`. Likewise `transformers` 5.x is broken on torch 2.4.1
+  (`NameError: nn`) and `peft` ≥0.15 imports it eagerly — pin `transformers==4.46.3 peft==0.14.0`.
+  Same genre as the peft→cu130 trap (FINDINGS §6a): the Volta-compatible torch is old enough that
+  **every** torch-adjacent package must be pinned to its era.
 - **[measured]** Fresh-interpreter rule: import heavy libs in a new `python` that inherits `PYTHONPATH`,
   or an already-imported image module (e.g. numpy) shadows your target install.
 
@@ -72,7 +78,7 @@ before you rely on a specific number).
 
 ## 6. Data constraints
 
-- **[measured]** NEMAR/OpenNeuro data at `$NEMARPATH` is **read-only** (547 datasets, git-annex). Your
+- **[measured]** NEMAR/OpenNeuro data at `$NEMARPATH` is **read-only** (552 datasets as of 2026-09-22, git-annex). Your
   own data must ride in the upload zip (subject to the size ceiling) or be an on-NEMAR `ds`.
 - **[policy]** **Human-subject data must be de-identified** — only de-identified data may be transferred
   to or run on NSG.

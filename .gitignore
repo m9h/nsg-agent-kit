@@ -13,3 +13,7 @@ __pycache__/
 
 # vendored REVE weights (264MB, pulled from HF via Spark token)
 sweep/reve_weights/
+sweep/oeb/*/fetched/
+sweep/oeb/*/pooled_results/
+sweep/oeb/*/shards/*.zip
+sweep/oeb/*/shards/*/reve_weights/

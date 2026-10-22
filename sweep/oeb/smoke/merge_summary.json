@@ -1,0 +1,29 @@
+{
+  "name": "smoke",
+  "n_rows": 1,
+  "n_failed": 0,
+  "pooled_cache": "oeb/smoke/pooled_results",
+  "shards": [
+    {
+      "backbones": [
+        "biot"
+      ],
+      "datasets": [
+        "arithmetic_zyma2019"
+      ],
+      "strategies": [
+        "frozen",
+        "ridge_probe"
+      ],
+      "heads": [
+        "linear_head"
+      ],
+      "seeds": [
+        0
+      ],
+      "device": "cuda",
+      "torch": "2.4.1",
+      "oeb": "0.6.0"
+    }
+  ]
+}

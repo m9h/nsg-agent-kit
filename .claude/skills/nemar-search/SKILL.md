@@ -8,7 +8,7 @@ description: Find NEMAR/OpenNeuro datasets (EEG/MEG/iEEG) by keyword, BIDS task 
 ## The key fact
 
 **NEMAR is a daily mirror of OpenNeuro.** Every `ds######` OpenNeuro lists is already on Expanse at
-`$NEMARPATH/<ds-id>` (`/expanse/projects/nemar/openneuro/`, ~547 datasets, git-annex, materialized).
+`$NEMARPATH/<ds-id>` (`/expanse/projects/nemar/openneuro/`, ~552 datasets, git-annex, materialized).
 
 So **discovery does not need an NSG job.** Query OpenNeuro's public GraphQL API locally and get the
 answer in seconds. Doing this as an NSG job instead means waiting hours in the Expanse queue for

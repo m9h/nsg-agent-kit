@@ -22,6 +22,11 @@ job.** Design for offline. Three strategies, cheapest first.
 > torch probe fails). **Pin `numpy<2`** in any torch job's install. (JAX is the opposite — it *wants*
 > numpy≥1.25; keep torch and jax jobs separate, which they already are.)
 
+> **torchaudio follows torch (measured 2026-10-22).** When you pin `torch==2.4.1` for Volta, also pin
+> `torchaudio==2.4.1`. braindecode requires torchaudio unpinned; a resolver can pair torch 2.4.1 with
+> torchaudio 2.11 and braindecode then fails at import (`undefined symbol: aoti_torch_abi_version`).
+> `sweep/oeb_shard.py` does this; copy the pattern.
+
 ## JAX on NSG — confirmed working (jax 0.10.2, GPU)
 
 The PyTorch tool is a fine base for JAX too (driver 580.82.07, V100). Recipe that works:

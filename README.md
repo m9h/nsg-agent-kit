@@ -5,7 +5,7 @@ Expanse) — for people *and* AI agents.**
 
 NSG gives you **free** access to NSF supercomputers (SDSC **Expanse**, V100 GPUs) — no HPC
 allocation, no SSH. You upload a zip of your code, pick a software environment, and NSG runs it and
-hands back the output. Through **NEMAR**, 547 OpenNeuro EEG/MEG/iEEG datasets already sit on Expanse's
+hands back the output. Through **NEMAR**, 552 OpenNeuro EEG/MEG/iEEG datasets already sit on Expanse's
 disk, free to read from your job.
 
 ---
@@ -75,7 +75,7 @@ New to all this? The gentle version is [`docs/GETTING_STARTED.md`](docs/GETTING_
 # What you get (and must live with)
 
 - **Hardware:** 1–4× `Tesla V100-SXM2-32GB` per job, Python 3.11.4, torch 2.0.1+cu117, 48 h max.
-- **Data:** NEMAR/OpenNeuro `ds######` at `$NEMARPATH` (`/expanse/projects/nemar/openneuro/`) — 547
+- **Data:** NEMAR/OpenNeuro `ds######` at `$NEMARPATH` (`/expanse/projects/nemar/openneuro/`) — 552
   datasets, read-only, no download.
 - **Key constraints:** the tool's Python venv is **read-only** (install deps with
   `pip install --target "$TMPDIR/libs"`), **torch is pinned at 2.0.1** (pin `numpy<2`, and
@@ -97,6 +97,7 @@ New to all this? The gentle version is [`docs/GETTING_STARTED.md`](docs/GETTING_
 | `.claude/skills/` | **Agent skills**: `nemar-search` (find a dataset in seconds, no NSG job), `nemar-inspect` (verify it holds what you need), `nemar-job` (run it on Expanse) |
 | [`docs/tool-params.md`](docs/tool-params.md) | Every tool id + submission parameter (from the public REST API) |
 | [`docs/submit-rest.md`](docs/submit-rest.md) · [`docs/submit-portal.md`](docs/submit-portal.md) | Submitting by REST / by GUI |
+| [`docs/OPENEEGBENCH.md`](docs/OPENEEGBENCH.md) | **OpenEEGBench on NSG**: upstream status (0.6.0, 8/12 datasets public), step-by-step runnability, `sweep/oeb_plan.py` + `oeb_shard.py` |
 | [`docs/FINDINGS.md`](docs/FINDINGS.md) · [`docs/ROADMAP.md`](docs/ROADMAP.md) | Platform intel · the OpenEEGBench-at-scale target |
 
 `nsgr/nsgr.sh` — curl wrapper (submit/status/fetch, env-var creds). `templates/` — zip templates for

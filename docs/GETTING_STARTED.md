@@ -19,7 +19,7 @@ Two ways to drive it:
 - **Web portal** — point-and-click. Best for your first job and one-offs.
 - **NSG-R (REST API)** — scriptable with `curl`. Best for automation, sweeps, and agents.
 
-**Bonus — free data next to the GPU:** through **NEMAR**, **547 OpenNeuro EEG/MEG/iEEG datasets**
+**Bonus — free data next to the GPU:** through **NEMAR**, **552 OpenNeuro EEG/MEG/iEEG datasets**
 are already sitting on Expanse's filesystem (at `$NEMARPATH`). Your job reads them directly — no
 download, no S3, no cost.
 
@@ -92,7 +92,7 @@ That's a real job, on a real V100, done.
 
 ## Step 3 — Use NEMAR data
 
-547 OpenNeuro datasets live at `$NEMARPATH` on the node. Reading one is just:
+552 OpenNeuro datasets live at `$NEMARPATH` on the node. Reading one is just:
 ```python
 import os
 root = os.environ["NEMARPATH"]              # /expanse/projects/nemar/openneuro/

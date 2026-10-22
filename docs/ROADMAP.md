@@ -12,18 +12,18 @@ independent) and NSG gives free GPU time on Expanse (up to 4× V100/node, 72 nod
 One fan-out of the matrix into NSG-R jobs turns a benchmark that would saturate a lab GPU for weeks
 into an overnight batch — at zero marginal cost.
 
-## The matrix (to be pinned from the OpenEEGBench + braindecode manifests)
+## The matrix (pinned from upstream 0.6.0 — see [`OPENEEGBENCH.md`](OPENEEGBENCH.md))
 
-- **Models (foundation encoders):** BENDR, EEGPT, Signal-JEPA, LaBraM, BIOT, **REVE**, plus
-  braindecode supervised baselines (EEGNet, ShallowConvNet, Deep4Net, EEG-Conformer, ATCNet).
-- **Datasets:** braindecode/MOABB + EEGDash corpora (BCI IV 2a/2b, PhysioNet MI, HGD, Sleep-EDF,
-  TUAB/TUEV, etc.). Braindecode exposes 150+ via MOABB and 700+ via EEGDash — start with the oeb
-  subset, then widen.
-- **Protocols:** (a) frozen encoder + linear probe, (b) full fine-tune, (c) **LoRA** (the REVE
-  research arm). Each protocol × seed is a job.
+- **Backbones (7):** BIOT, LaBraM, BENDR, CBraMod, Signal-JEPA, **REVE**, EEGPT — all
+  `braindecode.models.*` with HF weights (REVE gated → vendored). Supervised baselines only via
+  `ScratchBackbone` + `full_finetune`.
+- **Datasets (12, fixed, HF `braindecode/*`, pinned revisions):** **8 public** (arithmetic,
+  bcic2a, bcic2020-3, physionet, chbmit, faced, isruc-sleep, mdd_mumtaz2016; ~26 GB) and **4
+  private** (SEED-V, SEED-VIG, TUAB, TUEV — licence; arena-only).
+- **Strategies (9):** frozen, ridge_probe, lora, ia3, adalora, dora, oft, full_finetune, two_stages.
 
-Order of magnitude: ~10 models × ~15 datasets × 3 protocols × 3 seeds ≈ **1,300 jobs** — trivially
-within NSG's fan-out once one cell is green.
+Public matrix: 7 × 8 × 9 × 3 seeds = **1,512 experiments = 24 NSG jobs** as (dataset × seed)
+shards — see `OPENEEGBENCH.md` §4.
 
 ## Milestones (each with a red→green gate, in the kit's TDD style)
 
@@ -32,8 +32,8 @@ within NSG's fan-out once one cell is green.
 | **M0** | **Platform probe** — env/GPU/network/NEMARPATH facts | `probes/reve_frozen_probe` returns valid `metrics.json`; contract test GREEN | **in flight** (job `NGBW-JOB-PYTORCH_PY_EXPANSE-…`) |
 | **M1** | **Dependency reality** — do `peft`/`braindecode`/`transformers` vendor against torch 2.0.1+cu117, or do we need Apptainer? | `templates/pytorch-gpu` job imports all real deps on the node; decide Strategy B vs C (`docs/dependencies.md`) | **DONE — quick win.** Runtime `pip install mne` worked in 11 s (`nemar_load`). Deps install at runtime; only torch≥2.2 needs Apptainer. |
 | **M2** | **One real cell** — a single (model, dataset, protocol) OpenEEGBench cell end-to-end on NSG | a job produces a valid per-cell result (accuracy/AUROC) fetched back + schema-validated | **DONE (pipeline)** — `m2_cell`: EEGNet on ds002718 FaceRecognition (74ch, 650 trials) → test bal-acc 0.975 vs chance 0.769 on the V100. **Caveat:** the auto-picked 2-class contrast (most-frequent `trial_type`s) is not a curated scientific task — real cells need proper task defs. |
-| **M3** | **Data staging** — get benchmark datasets onto Expanse without runtime internet | datasets resolvable from `$NEMARPATH` (OpenNeuro `ds`) or a one-time staged cache; job reads them offline | **largely done** — 547 OpenNeuro `ds` live at `/expanse/projects/nemar/openneuro/` (git-annex, materialized). Remaining: map the oeb dataset list onto available `ds` ids; HF-only sets still need staging |
-| **M4** | **Sweep harness** — fan the full matrix out as many NSG-R jobs, track/fetch/aggregate | `nsgr/sweep.py` submits N cells, polls all, fetches, and emits a leaderboard artifact; a coverage test asserts all cells GREEN or explains gaps | blocked on M2/M3 |
+| **M3** | **Data staging** — get benchmark datasets onto Expanse without runtime internet | datasets resolvable from `$NEMARPATH` (OpenNeuro `ds`) or a one-time staged cache; job reads them offline | **largely done** — 552 OpenNeuro `ds` live at `/expanse/projects/nemar/openneuro/` (git-annex, materialized). Remaining: map the oeb dataset list onto available `ds` ids; HF-only sets still need staging |
+| **M4** | **Sweep harness** — fan the full matrix out as many NSG-R jobs, track/fetch/aggregate | `sweep/oeb_plan.py plan` → N shard zips; `merge` pools exca caches + leaderboard; `test_oeb_shard_contract.py` asserts every cell GREEN | **driver written 2026-10-22** (`sweep/oeb_shard.py` runs *upstream* `open_eeg_bench` in-process per job; exca cache verified relocatable). **Not yet run on NSG** — smoke shard is the next step |
 | **M5** | **LoRA-REVE sweep** — the research payload: frozen REVE + LoRA across datasets/hyperparams | LoRA results table reproduced on NSG; matches (± tol) a local reference cell | **in flight** — LoRA adapter builds correctly (r=32, 7.68% trainable, right target modules) on BNCI2014_001/subject 1. Earlier "no kernel image" error was **NOT a node upgrade** (§6a, measured): `peft` pulled a fresh cu130 torch into the job that dropped Volta/V100 support; the image torch is unchanged (2.0.1+cu117). Fix: pin `torch==2.4.1` (cu121, has `torch.nn.attention`, keeps sm_70) into the target via `cell.json`. See docs/FINDINGS.md §6/§6a. |
 
 ## Execution substrate: NSG gateway vs direct Expanse (a strategic fork)
@@ -65,7 +65,7 @@ longer.
 ## Progress log (live probes on Expanse, 2026-07-22)
 
 - **M0 platform** ✅ Py 3.11.4, V100-SXM2-32GB, driver 580.82.07, torch 2.0.1+cu117, egress=true.
-- **NEMAR** ✅ 547 OpenNeuro `ds` at `/expanse/projects/nemar/openneuro/`; real EEG loads via MNE.
+- **NEMAR** ✅ 547 (now 552) OpenNeuro `ds` at `/expanse/projects/nemar/openneuro/`; real EEG loads via MNE.
 - **M1 deps** ✅ quick win with a caveat: system venv is READ-ONLY → `pip install --target … --ignore-installed`
   into node-local scratch (not the returned workdir); mne/torch/numpy pre-installed.
 - **JAX** ✅ `jax 0.10.2` GPU-native (`cuda:0`, backend=gpu) via the same pattern → **neurojax can run on NSG**.
