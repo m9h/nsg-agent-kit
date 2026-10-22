@@ -2,6 +2,9 @@
 """Plan, package, and merge an OpenEEGBench sweep on NSG.
 
   plan   -> write one shard dir + zip per (dataset, seed) under sweep/oeb/<name>/shards/
+  submit -> submit every shard zip to NSG through nsgr/nsgr.sh with the right vparams
+            (filename_/subdirname_ per shard) -> sweep/oeb/<name>/jobs.json
+  poll   -> ask NSG-R for each job's stage; fetch output.tar.gz of finished jobs into fetched/<shard>/
   merge  -> untar fetched NSG outputs, pool their exca caches, write leaderboard.csv from the
             shard summaries (stdlib only)
   collect-> re-derive the configs with upstream benchmark() and read the pooled cache in
@@ -9,8 +12,9 @@
 
     python sweep/oeb_plan.py plan  --name smoke --backbones biot --datasets arithmetic_zyma2019 \
         --strategies frozen ridge_probe --seeds 0
-    for z in sweep/oeb/smoke/shards/*.zip; do ./nsgr/nsgr.sh submit PYTORCH_PY_EXPANSE "$z"; done
-    # ... fetch each job's output.tar.gz into sweep/oeb/smoke/fetched/<shard>/ ...
+    set -a; source nsgr/config.env; read -s NSG_PASSWORD; set +a   # creds in env, never on disk
+    python sweep/oeb_plan.py submit --name smoke          # -> jobs.json (one NSG job per shard)
+    python sweep/oeb_plan.py poll --name smoke            # repeat until every job is fetched
     python sweep/oeb_plan.py merge --name smoke
     python sweep/oeb_plan.py collect --name smoke      # needs open-eeg-bench importable
 
@@ -22,10 +26,13 @@ import glob
 import json
 import os
 import shutil
+import subprocess
 import tarfile
+import time
 import zipfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+NSGR = os.path.join(os.path.dirname(HERE), "nsgr", "nsgr.sh")
 PUBLIC_DATASETS = ["arithmetic_zyma2019", "bcic2a", "bcic2020_3", "physionet",
                    "chbmit", "faced", "isruc_sleep", "mdd_mumtaz2016"]
 # seed_v, seed_vig, tuab, tuev are PRIVATE on HF (licence; upstream issue #46) -> arena-only.
@@ -70,6 +77,94 @@ def plan(a):
     print(f"{len(manifest)} shards, {tot} experiments -> {root}")
     for m in manifest:
         print(f"  {m['shard']:28s} {m['n_cells']:4d} cells  {m['zip_bytes']/1e6:7.1f} MB")
+
+
+def _nsgr(args, extra=""):
+    """nsgr.sh needs NSG_URL/USER/APPKEY/PASSWORD in the env (source nsgr/config.env; read -s
+    NSG_PASSWORD). NSG_EXTRA is overridden per call so a stale one in config.env can't point a
+    shard at the wrong subdirname."""
+    for k in ("NSG_URL", "NSG_USER", "NSG_APPKEY", "NSG_PASSWORD"):
+        if not os.environ.get(k):
+            raise SystemExit(f"{k} not set: `set -a; source nsgr/config.env; read -s NSG_PASSWORD; set +a`")
+    env = dict(os.environ, NSG_EXTRA=extra)
+    r = subprocess.run([NSGR, *args], env=env, capture_output=True, text=True)
+    if r.returncode != 0:
+        raise SystemExit(f"nsgr.sh {' '.join(args)} failed:\n{r.stderr[-2000:]}")
+    return r.stdout
+
+
+def _tag(xml, name):
+    import re
+    m = re.search(rf"<{name}>([^<]*)</{name}>", xml)
+    return m.group(1).strip() if m else None
+
+
+def submit(a):
+    root = os.path.join(HERE, "oeb", a.name)
+    man = json.load(open(os.path.join(root, "manifest.json")))
+    hint = man.get("vparams_hint", {})
+    jobs_path = os.path.join(root, "jobs.json")
+    jobs = json.load(open(jobs_path)) if os.path.isfile(jobs_path) else {}
+    tool = os.environ.get("NSG_TOOL", "PYTORCH_PY_EXPANSE")
+    for m in man["shards"]:
+        sid = m["shard"]
+        if sid in jobs and not a.resubmit:
+            print(f"  {sid}: already submitted as {jobs[sid]['handle']} (use --resubmit to force)")
+            continue
+        vp = {"filename": "run.py", "subdirname": sid,
+              "runtime": a.runtime_hours or hint.get("runtime", 4.0),
+              "number_gpus": hint.get("number_gpus", 1),
+              "number_gbmemorypernode": a.gb_memory or hint.get("number_gbmemorypernode", 96)}
+        extra = " ".join(f"-F vparam.{k}_={v}" for k, v in vp.items())
+        xml = _nsgr(["submit", tool, os.path.join(HERE, m["zip"])], extra)
+        handle = _tag(xml, "jobHandle")
+        if not handle:
+            if "error creating tmp file for input parameter" in xml:
+                # NSG-R upload staging is down server-side (seen 2026-07-26 and 2026-10-22; GET/auth
+                # fine, every tool affected, a July zip that ran fine fails identically). Not our bug:
+                # retry later. Exit 75 = EX_TEMPFAIL so a wrapper loop can tell it from a real error.
+                print(f"  {sid}: NSG-R upload staging outage ('error creating tmp file'); "
+                      f"nothing was submitted. Retry in a few minutes; see docs/LIMITATIONS.md §NSG-R outages.")
+                raise SystemExit(75)
+            raise SystemExit(f"{sid}: no jobHandle in NSG response:\n{xml[-2000:]}")
+        jobs[sid] = {"handle": handle, "tool": tool, "vparams": vp, "submitted": time.strftime("%Y-%m-%dT%H:%M:%S"),
+                     "stage": _tag(xml, "jobStage")}
+        print(f"  {sid}: {handle}  ({jobs[sid]['stage']})")
+        json.dump(jobs, open(jobs_path, "w"), indent=2)
+    print(f"-> {jobs_path}")
+
+
+def poll(a):
+    """One pass over jobs.json: refresh stage, fetch finished jobs once. Exit code 0 only when every
+    job has been fetched (so `until oeb_plan.py poll --name X; do sleep 120; done` is a waiter)."""
+    root = os.path.join(HERE, "oeb", a.name)
+    jobs_path = os.path.join(root, "jobs.json")
+    jobs = json.load(open(jobs_path))
+    pending = 0
+    for sid, j in jobs.items():
+        if j.get("fetched"):
+            print(f"  {sid}: fetched -> {j['fetched']}")
+            continue
+        xml = _nsgr(["status", j["handle"]])
+        j["stage"] = _tag(xml, "jobStage"); j["failed"] = _tag(xml, "failed") == "true"
+        terminal = _tag(xml, "terminalStage") == "true"
+        msgs = [m for m in xml.split("<message>")[1:]]
+        j["last_message"] = msgs[-1].split("</message>")[0][:200] if msgs else None
+        if terminal:
+            dest = os.path.join(root, "fetched", sid)
+            _nsgr(["fetch", j["handle"], dest])
+            j["fetched"] = os.path.relpath(dest, HERE)
+            got = sorted(os.listdir(dest))
+            print(f"  {sid}: {j['stage']} failed={j['failed']} -> fetched {got}")
+            if not any(f.endswith(".tar.gz") for f in got):
+                print(f"    !! no output.tar.gz for {sid}: read STDERR/STDOUT in {dest}")
+        else:
+            pending += 1
+            print(f"  {sid}: {j['stage']}  {j['last_message'] or ''}")
+    json.dump(jobs, open(jobs_path, "w"), indent=2)
+    if pending:
+        raise SystemExit(f"{pending} job(s) still running; run poll again (NSG queue+run is typically 5-15 min for a smoke shard)")
+    print("all jobs fetched -> `oeb_plan.py merge --name %s`" % a.name)
 
 
 def merge(a):
@@ -148,6 +243,15 @@ def main():
     pp.add_argument("--runtime-hours", type=float, default=4.0)
     pp.add_argument("--reve-weights", default=os.path.join(HERE, "reve_weights", "reve-base", "model.safetensors"))
     pp.set_defaults(fn=plan)
+    ps = sub.add_parser("submit", help="submit every shard zip to NSG (needs NSG_* in env)")
+    ps.add_argument("--name", required=True)
+    ps.add_argument("--runtime-hours", type=float, default=None, help="override manifest vparams_hint")
+    ps.add_argument("--gb-memory", type=int, default=None)
+    ps.add_argument("--resubmit", action="store_true")
+    ps.set_defaults(fn=submit)
+    po = sub.add_parser("poll", help="refresh job stages; fetch finished jobs into fetched/<shard>/")
+    po.add_argument("--name", required=True)
+    po.set_defaults(fn=poll)
     pm = sub.add_parser("merge")
     pm.add_argument("--name", required=True)
     pm.set_defaults(fn=merge)

@@ -49,6 +49,7 @@ BIDS paths are **git-annex symlinks** with materialized content — follow symli
 | NSG returns the **whole working dir** | install deps to `$TMPDIR`, not `./` — a `jax[cuda12]` install in `./` made a 3.3 GB download |
 | `hnn_core` on `PY_EXPANSE` is **0.3**, not 0.6.x | do not use it where version matters; check `__version__` and report it in your results |
 | Queue latency is hours and variable | one cheap probe job first; never iterate interactively |
+| Submit returns `Internal Cipres Error ... error creating tmp file for input parameter input.infile_` | NSG-R upload staging is down (seen 2026-07-26, 2026-10-22; GET/auth still work). Control: resubmit a zip that ran before. Not your bug — retry every 5 min; `sweep/oeb_plan.py submit` exits 75 on it (LIMITATIONS.md §5a) |
 
 ## Always emit provenance
 

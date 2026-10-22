@@ -76,11 +76,26 @@ Already in place before this check (all [measured] on Expanse in July 2026):
 Added 2026-10-22:
 - `sweep/oeb_shard.py` — the per-job driver that runs **upstream** `open_eeg_bench` experiments
   with `cluster=None` into `./results` (exca cache) and writes `shard_summary.json`;
-- `sweep/oeb_plan.py` — `plan` (one zip per dataset × seed), `merge` (pool caches + leaderboard
-  from the summaries, stdlib) and `collect` (re-derive configs → upstream `collect_completed_results`
-  on the pooled cache in read-only mode — the numbers come out of upstream's collector);
-- `probes/tests/test_oeb_shard_contract.py` — RED until a shard has been fetched; GREEN asserts the
-  pinned stack, every cell completed, every classification cell above chance.
+- `sweep/oeb_plan.py` — `plan` (one zip per dataset × seed), `submit` (every shard zip through
+  `nsgr/nsgr.sh` with per-shard `filename_`/`subdirname_` vparams → `jobs.json`; exits 75 on the
+  NSG-R staging outage, `LIMITATIONS.md` §5a), `poll` (refresh stages, fetch finished jobs into
+  `fetched/<shard>/`, exit 0 only when all are fetched), `merge` (pool caches + leaderboard from the
+  summaries, stdlib) and `collect` (re-derive configs → upstream `collect_completed_results` on the
+  pooled cache in read-only mode — the numbers come out of upstream's collector);
+- `probes/tests/test_oeb_shard_contract.py` — RED until a shard has been fetched; GREEN asserts
+  **NSG provenance** (node `exp-*`, V100 — a laptop run copied into `fetched/` stays RED unless
+  `OEB_ALLOW_LOCAL=1`), the pinned stack, every cell completed, every classification cell above chance.
+
+The student path, start to finish:
+
+```bash
+python sweep/oeb_plan.py plan --name smoke --backbones biot --datasets arithmetic_zyma2019 --strategies frozen ridge_probe
+set -a; source nsgr/config.env; read -s NSG_PASSWORD; set +a
+until python sweep/oeb_plan.py submit --name smoke; do sleep 300; done   # waits out a staging outage
+until python sweep/oeb_plan.py poll   --name smoke; do sleep 120; done   # queue + run, ~10 min for smoke
+python sweep/oeb_plan.py merge --name smoke && python sweep/oeb_plan.py collect --name smoke
+pytest probes/tests/test_oeb_shard_contract.py -q
+```
 
 ## 3a. Local smoke run of the shard driver [measured 2026-10-22, Legion RTX 2080, Python 3.11]
 
@@ -117,6 +132,9 @@ batches of ≤10 and back off on 429.
 
 - [ ] **Run the smoke shard on NSG** (`sweep/oeb/smoke/shards/arithmetic_zyma2019_s0.zip`) — it is
       GREEN locally (§3a); the NSG run is what makes the V100/`$TMPDIR` path a measured fact.
+      **2026-10-22: submission attempted and refused by NSG-R** (`error creating tmp file for input
+      parameter input.infile_`, the staging outage of `LIMITATIONS.md` §5a; the July probe zip fails
+      identically, so it is the service). A retry loop is submitting every 5 min; result goes in §3b.
 - [ ] Measure HF download throughput on the node (sets the shard shape for ISRUC/FACED/CHB-MIT).
 - [x] `transformers 5.20` in the resolve **is** fatal on torch 2.4.1: `peft 0.21` imports it eagerly
       and it dies with `NameError: name 'nn' is not defined` (`transformers/integrations/accelerate.py`).

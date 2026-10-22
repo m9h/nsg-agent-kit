@@ -1,8 +1,13 @@
 """Red-green contract for an OpenEEGBench shard run through upstream `open_eeg_bench` on NSG.
 
 RED  : no shard_summary.json fetched yet -> fail with the submit instructions.
-GREEN: the shard installed the pinned stack, ran upstream's Experiment.run() for every cell,
-       every cell completed, and every classification cell beat chance.
+GREEN: the shard ran ON NSG (Expanse node, V100), installed the pinned stack, ran upstream's
+       Experiment.run() for every cell, every cell completed, and every classification cell beat
+       chance.
+
+A shard run on your laptop and copied into fetched/ stays RED on the provenance test on purpose:
+the contract is "this benchmark cell reproduces on the shared gateway", not "it runs somewhere".
+Set OEB_ALLOW_LOCAL=1 to check a local run against the other three tests only.
 
     pytest probes/tests/test_oeb_shard_contract.py -q
     OEB_SHARD_DIR=sweep/oeb/smoke/fetched/arithmetic_zyma2019_s0/extracted pytest ...
@@ -32,6 +37,18 @@ def _summaries():
             f"then fetch output.tar.gz into sweep/oeb/smoke/fetched/<shard>/ and `oeb_plan.py merge`."
         )
     return [json.load(open(f)) for f in found]
+
+
+def test_shard_ran_on_nsg():
+    if os.environ.get("OEB_ALLOW_LOCAL"):
+        pytest.skip("OEB_ALLOW_LOCAL set: provenance check disabled")
+    for s in _summaries():
+        node, gpu = s.get("node", ""), s.get("gpu") or ""
+        # Expanse GPU nodes are exp-NN-NN with Tesla V100-SXM2-32GB (docs/FINDINGS.md, env-snapshots/)
+        assert node.startswith("exp-"), (
+            f"RED: shard_summary.json says node={node!r} -- this is not an NSG/Expanse run. "
+            f"Submit with `python sweep/oeb_plan.py submit --name smoke`, then `poll`, then `merge`.")
+        assert "V100" in gpu, f"expected an Expanse V100, got gpu={gpu!r}"
 
 
 def test_shard_installed_pinned_stack():

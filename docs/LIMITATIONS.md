@@ -76,6 +76,26 @@ before you rely on a specific number).
   debug loops. Debug logic locally / on your own GPU first; use NSG for the actual heavy/batch run.
   Every code fix costs a full round-trip.
 
+## 5a. NSG-R itself has outages — tell them apart from your own bugs
+
+Observed twice (2026-07-26, 2026-10-22): every `POST /job/<user>` with an `input.infile_` upload
+returns
+
+```
+<displayMessage>Internal Cipres Error</displayMessage>
+<message>Internal Error: java.lang.RuntimeException: error creating tmp file for input parameter input.infile_</message>
+```
+
+while `GET` (auth, `/user`, job list, `/tool`) keeps working and the portal shows no notice. It is the
+gateway's upload-staging disk, not your zip: the same July probe zip that ran to COMPLETED on
+2026-09-22 fails identically. Both times it cleared without action on our side. What to do:
+
+- Re-submit a zip you *know* ran before (the control). Same error ⇒ outage, stop debugging your job.
+- Retry on a timer rather than hammering: `sweep/oeb_plan.py submit` exits **75** (`EX_TEMPFAIL`) on
+  exactly this message so a loop can wait for it (`until python sweep/oeb_plan.py submit --name X; do sleep 300; done`).
+- If it lasts more than a day, mail nsghelp@sdsc.edu with the message, your username, and the time.
+- Nothing was submitted, so nothing was charged against the shared allocation.
+
 ## 6. Data constraints
 
 - **[measured]** NEMAR/OpenNeuro data at `$NEMARPATH` is **read-only** (552 datasets as of 2026-09-22, git-annex). Your
