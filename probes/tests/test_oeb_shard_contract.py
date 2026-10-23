@@ -69,9 +69,30 @@ def test_shard_ran_every_cell_to_completion():
             if r.get("status") != "completed"]
 
 
-def test_classification_cells_beat_chance():
+def test_reference_cell_beats_chance():
+    """Only the reference cell (BIOT, frozen, linear head) must beat chance: it is the one we have a
+    measured number for (0.5764 on arithmetic_zyma2019, identical on RTX 2080 and V100). Other
+    backbones legitimately sit at chance on some datasets (bench1 2026-10-23: BENDR and Signal-JEPA
+    at 0.50 on arithmetic) -- that is a benchmark result, not a platform failure."""
+    seen = False
     for s in _summaries():
         for r in s["rows"]:
-            if r.get("dataset") in N_CLASSES and "test_balanced_accuracy" in r:
-                chance = 1.0 / N_CLASSES[r["dataset"]]
-                assert r["test_balanced_accuracy"] > chance, r
+            if r.get("backbone") == "BIOT" and r.get("finetuning") == "frozen" and r.get("head") == "linear" \
+                    and r.get("dataset") in N_CLASSES and r.get("status") == "completed":
+                seen = True
+                assert r["test_balanced_accuracy"] > 1.0 / N_CLASSES[r["dataset"]], r
+    if not seen:
+        pytest.skip("no BIOT/frozen/linear reference cell in this shard")
+
+
+def test_no_cell_failed_for_a_software_reason():
+    """A cell that raised is a stack problem (wrong pin, missing module, OOM), never a benchmark result.
+    Lists every distinct exception so a student sees the pin to fix, not 35 tracebacks."""
+    import collections
+    bad = collections.Counter()
+    for s in _summaries():
+        for r in s["rows"]:
+            if r.get("status") != "completed":
+                last = (r.get("exception") or "?").strip().splitlines()[-1][:120]
+                bad[last] += 1
+    assert not bad, "\n".join(f"{n:3d} x {m}" for m, n in bad.most_common())

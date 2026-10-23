@@ -1,0 +1,60 @@
+adapter_stats,backbone,dataset,exception,finetuning,fit_time,head,job_id,seed,status,test_balanced_accuracy,training
+"{'total_params': 3187458, 'trainable_params': 5378, 'trainable_pct': 0.1687237918, 'method': 'frozen'}",BIOT,braindecode/arithmetic_zyma2019,,frozen,21.8759381771,linear,#local#,0,completed,0.5763888889,sgd
+,BIOT,braindecode/arithmetic_zyma2019,LoraConfig.__init__() got an unexpected keyword argument 'target_parameters',lora,,linear,#local#,0,failed,,sgd
+,BIOT,braindecode/arithmetic_zyma2019,Only instances of PreTrainedModel support `target_modules='all-linear'`,ia3,,linear,#local#,0,failed,,sgd
+,BIOT,braindecode/arithmetic_zyma2019,AdaLoraConfig.__init__() got an unexpected keyword argument 'target_parameters',adalora,,linear,#local#,0,failed,,sgd
+,BIOT,braindecode/arithmetic_zyma2019,LoraConfig.__init__() got an unexpected keyword argument 'target_parameters',dora,,linear,#local#,0,failed,,sgd
+,BIOT,braindecode/arithmetic_zyma2019,"You can only specify either r (8) or oft_block_size (8), but not both simultaneously, because r x oft_block_size == in_features.",oft,,linear,#local#,0,failed,,sgd
+"{'total_params': 3187458, 'trainable_params': 3187458, 'trainable_pct': 100.0, 'method': 'full'}",BIOT,braindecode/arithmetic_zyma2019,,full,33.9001436234,linear,#local#,0,completed,0.6805555556,sgd
+"{'total_params': 3187458, 'trainable_params': 5378, 'trainable_pct': 0.1687237918, 'method': 'frozen'}",BIOT,braindecode/arithmetic_zyma2019,,two_stages,39.9526290894,linear,#local#,0,completed,0.6076388889,sgd
+"{'total_params': 5818338, 'trainable_params': 1602, 'trainable_pct': 0.0275336359, 'method': 'frozen'}",InterpolatedLaBraM,braindecode/arithmetic_zyma2019,,frozen,186.5971035957,linear,#local#,0,completed,0.5590277778,sgd
+,InterpolatedLaBraM,braindecode/arithmetic_zyma2019,LoraConfig.__init__() got an unexpected keyword argument 'target_parameters',lora,,linear,#local#,0,failed,,sgd
+,InterpolatedLaBraM,braindecode/arithmetic_zyma2019,AdaLoraConfig.__init__() got an unexpected keyword argument 'target_parameters',adalora,,linear,#local#,0,failed,,sgd
+,InterpolatedLaBraM,braindecode/arithmetic_zyma2019,LoraConfig.__init__() got an unexpected keyword argument 'target_parameters',dora,,linear,#local#,0,failed,,sgd
+"{'total_params': 5818338, 'trainable_params': 5818338, 'trainable_pct': 100.0, 'method': 'full'}",InterpolatedLaBraM,braindecode/arithmetic_zyma2019,,full,244.5419375896,linear,#local#,0,completed,0.5451388889,sgd
+"{'total_params': 5818338, 'trainable_params': 1602, 'trainable_pct': 0.0275336359, 'method': 'frozen'}",InterpolatedLaBraM,braindecode/arithmetic_zyma2019,,two_stages,180.9481027126,linear,#local#,0,completed,0.6493055556,sgd
+"{'total_params': 157141563, 'trainable_params': 1026, 'trainable_pct': 0.0006529145, 'method': 'frozen'}",InterpolatedBENDR,braindecode/arithmetic_zyma2019,,frozen,10.4788382053,linear,#local#,0,completed,0.5,sgd
+"{'total_params': 157140537, 'trainable_params': 0, 'trainable_pct': 0.0, 'method': 'frozen'}",InterpolatedBENDR,braindecode/arithmetic_zyma2019,,frozen,1.1291432381,flatten,#local#,0,completed,0.4756944444,ridge
+,InterpolatedBENDR,braindecode/arithmetic_zyma2019,LoraConfig.__init__() got an unexpected keyword argument 'target_parameters',lora,,linear,#local#,0,failed,,sgd
+,InterpolatedBENDR,braindecode/arithmetic_zyma2019,Only instances of PreTrainedModel support `target_modules='all-linear'`,ia3,,linear,#local#,0,failed,,sgd
+,InterpolatedBENDR,braindecode/arithmetic_zyma2019,AdaLoraConfig.__init__() got an unexpected keyword argument 'target_parameters',adalora,,linear,#local#,0,failed,,sgd
+,InterpolatedBENDR,braindecode/arithmetic_zyma2019,LoraConfig.__init__() got an unexpected keyword argument 'target_parameters',dora,,linear,#local#,0,failed,,sgd
+,InterpolatedBENDR,braindecode/arithmetic_zyma2019,"You can only specify either r (8) or oft_block_size (8), but not both simultaneously, because r x oft_block_size == in_features.",oft,,linear,#local#,0,failed,,sgd
+"{'total_params': 157141563, 'trainable_params': 157141563, 'trainable_pct': 100.0, 'method': 'full'}",InterpolatedBENDR,braindecode/arithmetic_zyma2019,,full,23.9752111435,linear,#local#,0,completed,0.5,sgd
+"{'total_params': 157141563, 'trainable_params': 1026, 'trainable_pct': 0.0006529145, 'method': 'frozen'}",InterpolatedBENDR,braindecode/arithmetic_zyma2019,,two_stages,23.2009780407,linear,#local#,0,completed,0.5,sgd
+"{'total_params': 4962002, 'trainable_params': 38002, 'trainable_pct': 0.7658602314, 'method': 'frozen'}",CBraMod,braindecode/arithmetic_zyma2019,,frozen,6.0098161697,linear,#local#,0,completed,0.5104166667,sgd
+"{'total_params': 4924000, 'trainable_params': 0, 'trainable_pct': 0.0, 'method': 'frozen'}",CBraMod,braindecode/arithmetic_zyma2019,,frozen,6.386218071,flatten,#local#,0,completed,0.5416666667,ridge
+,CBraMod,braindecode/arithmetic_zyma2019,LoraConfig.__init__() got an unexpected keyword argument 'target_parameters',lora,,linear,#local#,0,failed,,sgd
+,CBraMod,braindecode/arithmetic_zyma2019,Only instances of PreTrainedModel support `target_modules='all-linear'`,ia3,,linear,#local#,0,failed,,sgd
+,CBraMod,braindecode/arithmetic_zyma2019,AdaLoraConfig.__init__() got an unexpected keyword argument 'target_parameters',adalora,,linear,#local#,0,failed,,sgd
+,CBraMod,braindecode/arithmetic_zyma2019,LoraConfig.__init__() got an unexpected keyword argument 'target_parameters',dora,,linear,#local#,0,failed,,sgd
+,CBraMod,braindecode/arithmetic_zyma2019,"You can only specify either r (8) or oft_block_size (8), but not both simultaneously, because r x oft_block_size == in_features.",oft,,linear,#local#,0,failed,,sgd
+"{'total_params': 4962002, 'trainable_params': 4961802, 'trainable_pct': 99.9959693688, 'method': 'full'}",CBraMod,braindecode/arithmetic_zyma2019,,full,19.1577780247,linear,#local#,0,completed,0.5243055556,sgd
+"{'total_params': 4962002, 'trainable_params': 38002, 'trainable_pct': 0.7658602314, 'method': 'frozen'}",CBraMod,braindecode/arithmetic_zyma2019,,two_stages,11.5344035625,linear,#local#,0,completed,0.6736111111,sgd
+"{'total_params': 3512406, 'trainable_params': 55554, 'trainable_pct': 1.5816508684, 'method': 'frozen'}",InterpolatedSignalJEPA,braindecode/arithmetic_zyma2019,,frozen,16.0405378342,linear,#local#,0,completed,0.5,sgd
+"{'total_params': 3456852, 'trainable_params': 0, 'trainable_pct': 0.0, 'method': 'frozen'}",InterpolatedSignalJEPA,braindecode/arithmetic_zyma2019,,frozen,8.0388617516,flatten,#local#,0,completed,0.4930555556,ridge
+,InterpolatedSignalJEPA,braindecode/arithmetic_zyma2019,LoraConfig.__init__() got an unexpected keyword argument 'target_parameters',lora,,linear,#local#,0,failed,,sgd
+,InterpolatedSignalJEPA,braindecode/arithmetic_zyma2019,Only instances of PreTrainedModel support `target_modules='all-linear'`,ia3,,linear,#local#,0,failed,,sgd
+,InterpolatedSignalJEPA,braindecode/arithmetic_zyma2019,AdaLoraConfig.__init__() got an unexpected keyword argument 'target_parameters',adalora,,linear,#local#,0,failed,,sgd
+,InterpolatedSignalJEPA,braindecode/arithmetic_zyma2019,LoraConfig.__init__() got an unexpected keyword argument 'target_parameters',dora,,linear,#local#,0,failed,,sgd
+,InterpolatedSignalJEPA,braindecode/arithmetic_zyma2019,"You can only specify either r (8) or oft_block_size (8), but not both simultaneously, because r x oft_block_size == in_features.",oft,,linear,#local#,0,failed,,sgd
+"{'total_params': 3512406, 'trainable_params': 3512406, 'trainable_pct': 100.0, 'method': 'full'}",InterpolatedSignalJEPA,braindecode/arithmetic_zyma2019,,full,63.7551670074,linear,#local#,0,completed,0.5,sgd
+"{'total_params': 3512406, 'trainable_params': 55554, 'trainable_pct': 1.5816508684, 'method': 'frozen'}",InterpolatedSignalJEPA,braindecode/arithmetic_zyma2019,,two_stages,75.3661057949,linear,#local#,0,completed,0.5,sgd
+"{'total_params': 69286402, 'trainable_params': 97282, 'trainable_pct': 0.1404056167, 'method': 'frozen'}",REVE,braindecode/arithmetic_zyma2019,,frozen,26.3175895214,linear,#local#,0,completed,0.5451388889,sgd
+"{'total_params': 69189120, 'trainable_params': 0, 'trainable_pct': 0.0, 'method': 'frozen'}",REVE,braindecode/arithmetic_zyma2019,,frozen,12.196680069,flatten,#local#,0,completed,0.6319444444,ridge
+,REVE,braindecode/arithmetic_zyma2019,LoraConfig.__init__() got an unexpected keyword argument 'target_parameters',lora,,linear,#local#,0,failed,,sgd
+,REVE,braindecode/arithmetic_zyma2019,Only instances of PreTrainedModel support `target_modules='all-linear'`,ia3,,linear,#local#,0,failed,,sgd
+,REVE,braindecode/arithmetic_zyma2019,AdaLoraConfig.__init__() got an unexpected keyword argument 'target_parameters',adalora,,linear,#local#,0,failed,,sgd
+,REVE,braindecode/arithmetic_zyma2019,LoraConfig.__init__() got an unexpected keyword argument 'target_parameters',dora,,linear,#local#,0,failed,,sgd
+,REVE,braindecode/arithmetic_zyma2019,"You can only specify either r (8) or oft_block_size (8), but not both simultaneously, because r x oft_block_size == in_features.",oft,,linear,#local#,0,failed,,sgd
+"{'total_params': 69286402, 'trainable_params': 69286402, 'trainable_pct': 100.0, 'method': 'full'}",REVE,braindecode/arithmetic_zyma2019,,full,98.5650970936,linear,#local#,0,completed,0.6180555556,sgd
+"{'total_params': 69286402, 'trainable_params': 97282, 'trainable_pct': 0.1404056167, 'method': 'frozen'}",REVE,braindecode/arithmetic_zyma2019,,two_stages,51.6492311954,linear,#local#,0,completed,0.59375,sgd
+"{'total_params': 25414146, 'trainable_params': 126978, 'trainable_pct': 0.4996351245, 'method': 'frozen'}",InterpolatedEEGPT,braindecode/arithmetic_zyma2019,,frozen,161.7262585163,linear,#local#,0,completed,0.5798611111,sgd
+"{'total_params': 25287168, 'trainable_params': 0, 'trainable_pct': 0.0, 'method': 'frozen'}",InterpolatedEEGPT,braindecode/arithmetic_zyma2019,,frozen,25.5414526463,flatten,#local#,0,completed,0.5972222222,ridge
+,InterpolatedEEGPT,braindecode/arithmetic_zyma2019,LoraConfig.__init__() got an unexpected keyword argument 'target_parameters',lora,,linear,#local#,0,failed,,sgd
+,InterpolatedEEGPT,braindecode/arithmetic_zyma2019,Only instances of PreTrainedModel support `target_modules='all-linear'`,ia3,,linear,#local#,0,failed,,sgd
+,InterpolatedEEGPT,braindecode/arithmetic_zyma2019,AdaLoraConfig.__init__() got an unexpected keyword argument 'target_parameters',adalora,,linear,#local#,0,failed,,sgd
+,InterpolatedEEGPT,braindecode/arithmetic_zyma2019,LoraConfig.__init__() got an unexpected keyword argument 'target_parameters',dora,,linear,#local#,0,failed,,sgd
+,InterpolatedEEGPT,braindecode/arithmetic_zyma2019,"You can only specify either r (8) or oft_block_size (8), but not both simultaneously, because r x oft_block_size == in_features.",oft,,linear,#local#,0,failed,,sgd
+,InterpolatedEEGPT,braindecode/arithmetic_zyma2019,"CUDA out of memory. Tried to allocate 256.00 MiB. GPU 0 has a total capacity of 31.73 GiB of which 768.00 KiB is free. Including non-PyTorch memory, this process has 31.73 GiB memory in use. Of the allocated memory 28.51 GiB is allocated by PyTorch, and 2.79 GiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)",full,,linear,#local#,0,failed,,sgd
+,InterpolatedEEGPT,braindecode/arithmetic_zyma2019,"CUDA out of memory. Tried to allocate 2.00 MiB. GPU 0 has a total capacity of 31.73 GiB of which 768.00 KiB is free. Including non-PyTorch memory, this process has 31.73 GiB memory in use. Of the allocated memory 28.51 GiB is allocated by PyTorch, and 2.78 GiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)",two_stages,,linear,#local#,0,failed,,sgd

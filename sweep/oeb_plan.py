@@ -54,7 +54,7 @@ def plan(a):
             shutil.copy(os.path.join(HERE, "oeb_shard.py"), os.path.join(d, "run.py"))
             cfg = {"backbones": a.backbones, "datasets": [ds], "strategies": a.strategies,
                    "heads": a.heads, "seeds": [seed], "device": a.device,
-                   "torch": a.torch, "oeb": a.oeb}
+                   "torch": a.torch, "oeb": a.oeb, "peft": a.peft, "transformers": a.transformers}
             # brain-bzh/reve-base downloads anonymously since at least 2026-10-23 (277 MB, HTTP 200);
             # vendoring is only needed if HF gates it again -> --vendor-reve
             if a.vendor_reve and "reve" in a.backbones and os.path.isfile(a.reve_weights):
@@ -242,6 +242,11 @@ def main():
     pp.add_argument("--device", default="cuda")
     pp.add_argument("--torch", default="2.4.1")
     pp.add_argument("--oeb", default="0.6.0")
+    # peft 0.14.0 lacks target_parameters / all-linear on plain nn.Modules / new OFT semantics that
+    # upstream's finetuning.py uses -> 33 of 59 bench1 cells failed (2026-10-23). 0.21.2 imports
+    # cleanly next to transformers 4.46.3 + torch 2.4.1 [measured locally].
+    pp.add_argument("--peft", default="peft==0.21.2")
+    pp.add_argument("--transformers", default="transformers==4.46.3")
     pp.add_argument("--runtime-hours", type=float, default=4.0)
     pp.add_argument("--reve-weights", default=os.path.join(HERE, "reve_weights", "reve-base", "model.safetensors"))
     pp.add_argument("--vendor-reve", action="store_true", help="ship local REVE weights in the zip (only if HF gates the repo)")

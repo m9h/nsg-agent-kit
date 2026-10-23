@@ -141,10 +141,35 @@ def run_shard(cfg, summary):
     summary["skipped_invalid"] = skipped
 
     t0 = time.time()
-    df = run_many(experiments, collect_all=True)
+    # One run_many() call per experiment, with a GPU cleanup in between: the cells share one
+    # process, and bench1 (2026-10-23, exp-10-60) showed EEGPT full/two_stages OOM on a 32 GB V100
+    # with 28.5 GB "allocated by PyTorch" after 40 earlier cells -- the per-cell peak below tells
+    # whether that was the cell or the accumulation. Also gives per-cell wall time independent of
+    # upstream's fit_time. Failures stay per-cell (collect_all=True) and never abort the shard.
+    import gc
+    rows, cells = [], []
+    for e in experiments:
+        if torch.cuda.is_available():
+            torch.cuda.reset_peak_memory_stats()
+        tc = time.time()
+        df = run_many([e], collect_all=True)
+        wall = round(time.time() - tc, 1)
+        peak = round(torch.cuda.max_memory_allocated() / 2**30, 2) if torch.cuda.is_available() else None
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        held = round(torch.cuda.memory_allocated() / 2**30, 2) if torch.cuda.is_available() else None
+        for r in (json.loads(df.to_json(orient="records")) if len(df) else []):
+            r["cell_wall_seconds"] = wall
+            r["cell_peak_gib"] = peak
+            r["gib_still_allocated_after"] = held     # growing => something leaks across cells
+            rows.append(r)
+        cells.append({"uid": e.infra.uid()[:60], "wall": wall, "peak_gib": peak, "held_gib": held})
+        json.dump(dict(summary, rows=rows, cells=cells, partial=True), open(SUMMARY, "w"), indent=2, default=str)
     summary["run_seconds"] = round(time.time() - t0, 1)
-    rows = json.loads(df.to_json(orient="records")) if len(df) else []
     summary["rows"] = rows
+    summary["cells"] = cells
+    summary.pop("partial", None)
     summary["n_completed"] = sum(1 for r in rows if r.get("status") == "completed")
     summary["n_failed"] = sum(1 for r in rows if r.get("status") == "failed")
 
@@ -153,7 +178,7 @@ def main():
     cfg = load_cfg()
     if os.environ.get("NSGKIT_OEB_CHILD") == "1":
         summary = json.load(open(SUMMARY))
-        for stale in ("shard_error", "trace", "rows"):     # a re-run must not inherit a prior failure
+        for stale in ("shard_error", "trace", "rows", "cells", "partial"):   # a re-run must not inherit a prior failure
             summary.pop(stale, None)
         try:
             run_shard(cfg, summary)
