@@ -52,7 +52,7 @@ before you rely on a specific number).
 - **[measured]** **Pin companions to torch.** Anything that depends on `torchaudio` (braindecode ≥1.6 does)
   must pin `torchaudio==<torch version>`; an unmatched build imports torch fine and then dies with
   `undefined symbol: aoti_torch_abi_version`. Likewise `transformers` 5.x is broken on torch 2.4.1
-  (`NameError: nn`) and `peft` ≥0.15 imports it eagerly — pin `transformers==4.46.3 peft==0.14.0`.
+  (`NameError: nn`) — pin `transformers==4.46.3`; `peft` itself must be recent (`peft==0.21.2`: upstream's adapter configs need ≥0.17, and 0.21.2 imports fine next to transformers 4.46.3).
   Same genre as the peft→cu130 trap (FINDINGS §6a): the Volta-compatible torch is old enough that
   **every** torch-adjacent package must be pinned to its era.
 - **[measured 2026-10-22, exp-9-57]** **The tool's Python 3.11.4 has no `_sqlite3` extension.** `import sqlite3`

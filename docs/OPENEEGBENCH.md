@@ -47,7 +47,7 @@ submitting the model to the arena. None of the 8 are on NEMAR (`nemar-data.md` �
 |---|---|---|---|
 | Python | ≥3.11 | 3.11.4 on `PYTORCH_PY_EXPANSE` [measured 2026-09-22] | — |
 | torch | `>=2.0`; lockfile is 2.11 | image 2.0.1+cu117; **`torch==2.4.1` (cu121) installs at runtime and keeps Volta** [measured, FINDINGS §6a] | `sweep/oeb_shard.py` pins it first |
-| full dep stack | braindecode[hub] ≥1.6.1, peft ≥0.14, exca, skorch, zarr, hf-hub, wandb… | **resolves for cp311/manylinux with `torch==2.4.1 numpy<2`** → braindecode 1.8.1, peft 0.21.2, exca 0.6.0, transformers 5.20.2, 120 pkgs [measured dry-run 2026-10-22]. Must go to `$TMPDIR` (read-only venv). **Two more pins are mandatory**: `transformers==4.46.3`+`peft==0.14.0` (5.x transformers is broken on torch 2.4.1, see §5) and **`torchaudio` must be pinned to the torch version**: braindecode requires it unpinned; `uv` resolved 2.11.0 next to torch 2.4.1 and braindecode failed at import (`undefined symbol: aoti_torch_abi_version`) [measured locally 2026-10-22]; pip's resolver happened to pick 2.4.1 — don't rely on it | `oeb_shard.py` `install()` pins torch, torchaudio, numpy first |
+| full dep stack | braindecode[hub] ≥1.6.1, peft ≥0.14, exca, skorch, zarr, hf-hub, wandb… | **resolves for cp311/manylinux with `torch==2.4.1 numpy<2`** → braindecode 1.8.1, peft 0.21.2, exca 0.6.0, transformers 5.20.2, 120 pkgs [measured dry-run 2026-10-22]. Must go to `$TMPDIR` (read-only venv). **Two more pins are mandatory**: `transformers==4.46.3` (5.x is broken on torch 2.4.1, see §5) + **`peft==0.21.2`** (NOT 0.14: upstream's adapters need `target_parameters`, `all-linear` on plain modules and peft-0.15 OFT semantics — 33/59 bench1 cells failed on 0.14.0, FINDINGS §8a) and **`torchaudio` must be pinned to the torch version**: braindecode requires it unpinned; `uv` resolved 2.11.0 next to torch 2.4.1 and braindecode failed at import (`undefined symbol: aoti_torch_abi_version`) [measured locally 2026-10-22]; pip's resolver happened to pick 2.4.1 — don't rely on it | `oeb_shard.py` `install()` pins torch, torchaudio, numpy first |
 | datasets | `BaseConcatDataset.pull_from_hub` → `snapshot_download` of a zarr repo at a pinned revision | runtime egress works [measured]; **no persistence → re-downloaded every job** (0.1–13 GB) → `HF_HOME=$TMPDIR/hf` so it is not returned | `oeb_shard.py` |
 | weights | `hf_hub_download(hub_repo, "model.safetensors")` | **public for all 7 backbones as of 2026-10-23** (REVE was gated in July; `huggingface.co/api/models/brain-bzh/reve-base` now says `gated: false`). If it is gated again: `oeb_plan.py plan --vendor-reve` ships the local 264 MB copy (`sweep/reve_weights/`, gitignored) as `checkpoint_path` | nothing to do by default |
 | scheduler | `cluster="slurm"` → submitit `sbatch` | **not available** — NSG jobs cannot call `sbatch`; the gateway *is* the scheduler | run with `cluster=None` inside each NSG job; fan-out is ours (`oeb_plan.py plan`) |
@@ -100,7 +100,7 @@ pytest probes/tests/test_oeb_shard_contract.py -q
 ## 3a. Local smoke run of the shard driver [measured 2026-10-22, Legion RTX 2080, Python 3.11]
 
 Same pins the NSG job installs (`torch==2.4.1 torchaudio==2.4.1 numpy<2 transformers==4.46.3
-peft==0.14.0 open-eeg-bench==0.6.0`), same driver, `shard.json` = BIOT × `arithmetic_zyma2019` ×
+peft==0.14.0 open-eeg-bench==0.6.0` — peft since raised to 0.21.2, FINDINGS §8a), same driver, `shard.json` = BIOT × `arithmetic_zyma2019` ×
 {frozen, ridge_probe} × seed 0:
 
 | | |
@@ -156,7 +156,7 @@ batches of ≤10 and back off on 429.
 - [ ] Measure HF download throughput on the node (sets the shard shape for ISRUC/FACED/CHB-MIT).
 - [x] `transformers 5.20` in the resolve **is** fatal on torch 2.4.1: `peft 0.21` imports it eagerly
       and it dies with `NameError: name 'nn' is not defined` (`transformers/integrations/accelerate.py`).
-      Pinned **`transformers==4.46.3` + `peft==0.14.0`** (the oldest peft open-eeg-bench accepts);
+      Pinned **`transformers==4.46.3` + `peft==0.21.2`** (0.14.0 was tried first and is too old for upstream's adapter configs — FINDINGS §8a);
       imports clean [measured locally 2026-10-22, Python 3.11 venv].
 - [ ] **Upstream bug to report:** `oeb.benchmark()` has no `training_required_modules` /
       `training_required_parameters` kwargs, so the pattern in `examples/run_on_slurm.py` (factory

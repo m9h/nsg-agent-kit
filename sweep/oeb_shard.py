@@ -49,13 +49,14 @@ def install(cfg, summary):
     oeb_pin = cfg.get("oeb", "0.6.0")
     # torchaudio must match torch exactly: braindecode requires it unpinned and an unmatched build
     # fails at import (undefined symbol aoti_torch_abi_version) [measured locally 2026-10-22].
-    # transformers 5.x is broken on torch 2.4.1 (NameError: nn in integrations/accelerate.py) and
-    # peft >=0.15 imports it eagerly -> pin both to the last 4.x-era pair that satisfies
-    # open-eeg-bench's peft>=0.14 [measured locally 2026-10-22].
+    # transformers 5.x is broken on torch 2.4.1 (NameError: nn in integrations/accelerate.py) ->
+    # pin 4.46.3. peft must be RECENT (>=0.17: upstream finetuning.py passes target_parameters,
+    # 'all-linear' on plain nn.Modules, new OFT semantics) -- peft 0.14.0 failed 33/59 bench1 cells
+    # on NSG 2026-10-23; 0.21.2 imports cleanly next to transformers 4.46.3 [measured locally].
     # pysqlite3-binary: the tool's Python 3.11.4 has NO _sqlite3 extension (measured on exp-9-57,
     # 2026-10-22, job ...F6E9A7AD) and exca imports sqlite3 -> shimmed in run_shard().
     pkgs = [f"torch=={torch_pin}", f"torchaudio=={torch_pin}", "numpy<2",
-            cfg.get("transformers", "transformers==4.46.3"), cfg.get("peft", "peft==0.14.0"),
+            cfg.get("transformers", "transformers==4.46.3"), cfg.get("peft", "peft==0.21.2"),
             f"open-eeg-bench=={oeb_pin}", "pysqlite3-binary"] + cfg.get("extra_pip", [])
     t0 = time.time()
     r = subprocess.run([sys.executable, "-m", "pip", "install", "--target", LIBS,

@@ -288,3 +288,39 @@ pip install into `$TMPDIR` in ~2.5 min, no container needed; (b) HF dataset down
 on the node; (c) results are deterministic across GPUs for this cell, so NSG numbers are comparable
 with local ones; (d) 15 min wall-clock per smoke job including queue — the budget per shard is the
 dataset download + 7 backbones × 9 strategies × ~1 min, not NSG overhead.
+
+### 8a. bench1: one dataset × seed, all 7 backbones × 9 strategies (2026-10-23, job `…C464E692`, exp-10-60)
+
+`oeb_plan.py plan --name bench1 --backbones <all 7> --strategies <all 9> --heads linear_head`,
+59 valid cells (upstream's validator drops BIOT×ridge_probe and LaBraM×{ridge_probe, ia3, oft}).
+Queue **1 h 52 min** (12:18 → 14:10 PDT), pip 131 s, **59 cells in 1,544 s** (25.7 min; sum of
+upstream `fit_time` 1,349 s), returned tarball 82 kB. **24 completed, 35 failed** — every failure a
+stack problem, none a benchmark result:
+
+| n | exception | cause → fix |
+|---|---|---|
+| 21 | `LoraConfig`/`AdaLoraConfig.__init__() got an unexpected keyword argument 'target_parameters'` | upstream `finetuning.py` passes peft ≥0.17 kwargs; our `peft==0.14.0` pin (chosen in §OPENEEGBENCH to dodge transformers 5.x) is too old → **`peft==0.21.2`** imports cleanly next to `transformers==4.46.3` + torch 2.4.1 [measured locally]; validated in bench1b |
+| 6 | `Only instances of PreTrainedModel support target_modules='all-linear'` (ia3) | same peft-0.14 limitation |
+| 6 | OFT: `You can only specify either r (8) or oft_block_size (8)` | same — OFT config semantics changed in peft 0.15 |
+| 2 | `CUDA out of memory` — EEGPT full_finetune and two_stages, 28.5 GB "allocated by PyTorch" of 31.7 | ran after 40 earlier cells in the same process; either EEGPT full FT genuinely needs >32 GB at upstream's batch size or memory accumulates across cells → driver now runs one cell at a time with `gc` + `empty_cache` and logs per-cell peak / still-held GiB |
+
+The 24 completed cells (balanced accuracy, arithmetic_zyma2019, seed 0, linear head unless `flatten`
+= ridge_probe):
+
+| backbone | frozen | ridge | full | two_stages | fit s (frozen / full) |
+|---|---|---|---|---|---|
+| BIOT | 0.576 | — | **0.681** | 0.608 | 22 / 34 |
+| CBraMod | 0.510 | 0.542 | 0.524 | **0.674** | 6 / 19 |
+| BENDR | 0.500 | 0.476 | 0.500 | 0.500 | 10 / 24 |
+| EEGPT | 0.580 | 0.597 | OOM | OOM | 162 / — |
+| LaBraM | 0.559 | — | 0.545 | **0.649** | 187 / 245 |
+| Signal-JEPA | 0.500 | 0.493 | 0.500 | 0.500 | 16 / 64 |
+| REVE | 0.545 | **0.632** | 0.618 | 0.594 | 26 / 99 |
+
+BENDR and Signal-JEPA sit at chance on this 2-class, 1,343-window dataset under every strategy —
+a benchmark finding (the 0.6.0 paper's arithmetic column is similarly weak for them), so the
+contract's "beats chance" assertion now applies only to the BIOT reference cell.
+
+**Sizing update.** Cells cost 1–245 s here; LaBraM and EEGPT dominate. For this smallest dataset a
+full (backbone × strategy) shard is ~30 min of V100 once the adapters work, i.e. **queue time, not
+compute, is the budget** at this scale; ISRUC (13 GB, 10× the windows) is where the 48 h limit will bite.
