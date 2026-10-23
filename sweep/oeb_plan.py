@@ -55,7 +55,9 @@ def plan(a):
             cfg = {"backbones": a.backbones, "datasets": [ds], "strategies": a.strategies,
                    "heads": a.heads, "seeds": [seed], "device": a.device,
                    "torch": a.torch, "oeb": a.oeb}
-            if "reve" in a.backbones and os.path.isfile(a.reve_weights):
+            # brain-bzh/reve-base downloads anonymously since at least 2026-10-23 (277 MB, HTTP 200);
+            # vendoring is only needed if HF gates it again -> --vendor-reve
+            if a.vendor_reve and "reve" in a.backbones and os.path.isfile(a.reve_weights):
                 os.makedirs(os.path.join(d, "reve_weights", "reve-base"), exist_ok=True)
                 shutil.copy(a.reve_weights, os.path.join(d, "reve_weights", "reve-base", "model.safetensors"))
                 cfg["checkpoints"] = {"reve": "reve_weights/reve-base/model.safetensors"}
@@ -242,6 +244,7 @@ def main():
     pp.add_argument("--oeb", default="0.6.0")
     pp.add_argument("--runtime-hours", type=float, default=4.0)
     pp.add_argument("--reve-weights", default=os.path.join(HERE, "reve_weights", "reve-base", "model.safetensors"))
+    pp.add_argument("--vendor-reve", action="store_true", help="ship local REVE weights in the zip (only if HF gates the repo)")
     pp.set_defaults(fn=plan)
     ps = sub.add_parser("submit", help="submit every shard zip to NSG (needs NSG_* in env)")
     ps.add_argument("--name", required=True)

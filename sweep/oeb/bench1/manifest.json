@@ -1,0 +1,16 @@
+{
+  "name": "bench1",
+  "shards": [
+    {
+      "shard": "arithmetic_zyma2019_s0",
+      "zip": "oeb/bench1/shards/arithmetic_zyma2019_s0.zip",
+      "n_cells": 63,
+      "zip_bytes": 4427
+    }
+  ],
+  "vparams_hint": {
+    "runtime": 8.0,
+    "number_gpus": 1,
+    "number_gbmemorypernode": 96
+  }
+}
