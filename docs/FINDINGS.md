@@ -324,3 +324,24 @@ contract's "beats chance" assertion now applies only to the BIOT reference cell.
 **Sizing update.** Cells cost 1–245 s here; LaBraM and EEGPT dominate. For this smallest dataset a
 full (backbone × strategy) shard is ~30 min of V100 once the adapters work, i.e. **queue time, not
 compute, is the budget** at this scale; ISRUC (13 GB, 10× the windows) is where the 48 h limit will bite.
+
+### 8b. bench1b: the peft fix validated, the EEGPT OOM isolated (2026-10-23, job `…0FCDB03E`, exp-13-59)
+
+BIOT + EEGPT × {frozen, lora, ia3, adalora, dora, oft, full_finetune, two_stages}, `peft==0.21.2`,
+driver running one cell at a time with `gc` + `empty_cache` and per-cell peak/held GiB. Queue 19 min,
+pip 136 s, 16 cells in 584 s.
+
+| backbone | strategy | status | bal. acc | wall s | peak GiB | held after |
+|---|---|---|---|---|---|---|
+| BIOT | frozen / ia3 / lora / adalora / dora / oft / full / two_stages | **8/8 completed** | 0.576 / 0.580 / 0.615 / 0.632 / 0.625 / 0.608 / 0.681 / 0.608 | 25–75 | 0.6–1.9 | 0.06 |
+| EEGPT | frozen | completed | 0.580 | 153 | 3.2 | 0.06 |
+| EEGPT | ia3 / lora / adalora / dora / oft / full | **OOM** | — | **2–2.5** | **30.0–31.0** | 0.06 |
+| EEGPT | two_stages | OOM (after its frozen stage) | — | 69 | 30.5 | 0.06 |
+
+- **`peft==0.21.2` closes all 33 adapter failures of bench1** — every PEFT strategy runs on the V100
+  next to `transformers==4.46.3` + torch 2.4.1.
+- **EEGPT with gradients through the backbone needs > 32 GB at upstream's config.** Each such cell
+  OOMs in ~2 s (first backward), while `held after` stays at 0.06 GiB across all 16 cells — so the
+  bench1 OOMs were EEGPT itself, not accumulation. Frozen EEGPT peaks at 3.2 GiB. This is a
+  **V100-32GB limit**, not an NSG limit: the 5 trainable EEGPT strategies need a bigger GPU or a
+  smaller batch than upstream's default (see §8c for what upstream's config allows).
