@@ -1,0 +1,36 @@
+{
+  "name": "bench1c",
+  "n_rows": 2,
+  "n_failed": 0,
+  "pooled_cache": "oeb/bench1c/pooled_results",
+  "shards": [
+    {
+      "backbones": [
+        "eegpt"
+      ],
+      "datasets": [
+        "arithmetic_zyma2019"
+      ],
+      "strategies": [
+        "lora",
+        "full_finetune"
+      ],
+      "heads": [
+        "linear_head"
+      ],
+      "seeds": [
+        0
+      ],
+      "device": "cuda",
+      "torch": "2.4.1",
+      "oeb": "0.6.0",
+      "peft": "peft==0.21.2",
+      "transformers": "transformers==4.46.3",
+      "training_overrides": {
+        "eegpt": {
+          "batch_size": 16
+        }
+      }
+    }
+  ]
+}

@@ -160,8 +160,10 @@ first backward pass**. EEGPT frozen / ridge_probe run (3.2 GiB). Options, in ord
    they are 7 × 8 datasets × seeds of the 1,512-experiment matrix.
 2. **Run them at a smaller batch as a flagged deviation**: `oeb_plan.py plan --training-override
    eegpt:batch_size=16`. The exca uid changes with the training config, so the cell can never be
-   confused with the protocol cell in a pooled cache, and the row carries the batch size. Peak memory
-   at batch 16 is being measured (bench1c).
+   confused with the protocol cell in a pooled cache, and the row carries `batch_size` and
+   `protocol_deviation`. **Measured (bench1c, FINDINGS §8c): batch 16 fits (peak 8.8–10.1 GiB) but
+   lora/full land at chance (0.52/0.51 vs 0.58 frozen) and take 12–16 min per cell** — a different
+   training regime, not the protocol. Use it to study the batch effect, not to fill the leaderboard.
 3. NSG's `number_gpus` ≤ 4 does not help: upstream trains on one device.
 
 ## 5. Open items

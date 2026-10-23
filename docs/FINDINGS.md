@@ -345,3 +345,30 @@ pip 136 s, 16 cells in 584 s.
   bench1 OOMs were EEGPT itself, not accumulation. Frozen EEGPT peaks at 3.2 GiB. This is a
   **V100-32GB limit**, not an NSG limit: the 5 trainable EEGPT strategies need a bigger GPU or a
   smaller batch than upstream's default (see §8c for what upstream's config allows).
+
+### 8c. bench1c: EEGPT at batch 16 fits, but the numbers are not the protocol's (2026-10-23, job `…66FCA037`, exp-1-58)
+
+EEGPT × {lora, full_finetune}, linear head, arithmetic seed 0, `--training-override eegpt:batch_size=16`
+(everything else at upstream's `Training` defaults: 50 epochs, lr 5e-4, fp32). Queue 55 min, pip 139 s,
+2 cells in 1,692 s.
+
+| strategy | status | bal. acc | wall s | fit s | peak GiB | held after | trainable params |
+|---|---|---|---|---|---|---|---|
+| EEGPT lora | completed | 0.521 | 704 | 659 | **10.1** | 0.06 | 1.18 M (4.4 %) |
+| EEGPT full_finetune | completed | 0.510 | 987 | 984 | **8.8** | 0.06 | 25.4 M (100 %) |
+
+- **Batch 16 fits with room**: peak 8.8–10.1 GiB against > 30 GiB at batch 64 (§8b), i.e. the
+  first-backward footprint scales ~linearly with batch and batch 32 would likely fit too (~20 GiB,
+  not measured). So every EEGPT strategy *can* be run on a V100-32GB — at a deviated batch.
+- **The deviated cells are slow and land at chance**: 0.52 / 0.51 against 0.58 for frozen EEGPT
+  (§8a/§8b) and 0.68 for BIOT full fine-tune. Four times the optimizer steps per epoch at the same
+  lr/warmup is a different training regime, not the protocol with a smaller batch, so these rows
+  must not be compared with protocol rows. ~12–16 min per cell against 2.5 min for frozen EEGPT.
+- **Consequence for the sweep**: option 1 of `OPENEEGBENCH.md` §4a (report the 7 trainable EEGPT
+  cells as *not runnable at protocol on V100-32GB*) is the default; the batch-16 path exists for a
+  study of the batch-size effect, not as a substitute. The driver now stamps every row with
+  `batch_size` and `protocol_deviation` (e.g. `batch_size=16`) so a pooled leaderboard can filter
+  them; bench1c's own rows pre-date that field (its deviation is only in the exca uid and in
+  `shard.json`).
+- NSG-R cost of this shard: 55 min queue for 28 min of GPU — the queue, not the GPU, sets the
+  wall-clock of a sweep (consistent with 7 min / 1 h 52 / 19 min on the earlier shards).

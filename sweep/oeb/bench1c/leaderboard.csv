@@ -1,0 +1,3 @@
+adapter_stats,backbone,cell_peak_gib,cell_wall_seconds,dataset,finetuning,fit_time,gib_still_allocated_after,head,job_id,seed,status,test_balanced_accuracy,training
+"{'method': 'lora', 'total_params': 26589700, 'trainable_params': 1175554, 'trainable_pct': 4.4210878648}",InterpolatedEEGPT,10.12,703.8,braindecode/arithmetic_zyma2019,lora,658.6799368858,0.06,linear,#local#,0,completed,0.5208333333,sgd
+"{'total_params': 25414146, 'trainable_params': 25414146, 'trainable_pct': 100.0, 'method': 'full'}",InterpolatedEEGPT,8.76,987.4,braindecode/arithmetic_zyma2019,full,983.5351407528,0.06,linear,#local#,0,completed,0.5104166667,sgd

@@ -113,6 +113,15 @@ def shim_sqlite3(summary):
         summary["sqlite3"] = f"pysqlite3 {pysqlite3.version} (no _sqlite3 in the image)"
 
 
+def _deviation(training):
+    """'' when `training` equals upstream's protocol (Training defaults), else 'key=value,...'
+    for every field that differs (device/num_workers excluded: not part of the uid either)."""
+    default = type(training)().model_dump()
+    diff = [f"{k}={v}" for k, v in training.model_dump().items()
+            if k not in ("device", "num_workers") and v != default[k]]
+    return ",".join(diff)
+
+
 def run_shard(cfg, summary):
     """Runs in the fresh interpreter. Builds upstream Experiment configs and runs them in-process
     (cluster=None) with the exca cache under ./results."""
@@ -144,6 +153,7 @@ def run_shard(cfg, summary):
         experiments += exps
         skipped += [dict(backbone=bb_name, **k) for k in skip]
     summary["backbone_configs"] = bb_cfgs
+    summary["training_overrides"] = cfg.get("training_overrides", {})
     summary["n_experiments"] = len(experiments)
     summary["skipped_invalid"] = skipped
 
@@ -170,6 +180,10 @@ def run_shard(cfg, summary):
             r["cell_wall_seconds"] = wall
             r["cell_peak_gib"] = peak
             r["gib_still_allocated_after"] = held     # growing => something leaks across cells
+            # upstream's row only keeps training.kind ("sgd"); a training override (batch_size) is in
+            # the exca uid but invisible in the leaderboard, so stamp it on the row explicitly.
+            r["batch_size"] = e.training.batch_size
+            r["protocol_deviation"] = _deviation(e.training)
             rows.append(r)
         cells.append({"uid": e.infra.uid()[:60], "wall": wall, "peak_gib": peak, "held_gib": held})
         json.dump(dict(summary, rows=rows, cells=cells, partial=True), open(SUMMARY, "w"), indent=2, default=str)
