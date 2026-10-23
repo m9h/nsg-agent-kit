@@ -148,6 +148,22 @@ per job is the single largest waste — it argues for `--backbones` shards of *a
 ISRUC so the download is paid 7×3 times, not 63×3. Fair-use note (`LIMITATIONS.md` §1): submit in
 batches of ≤10 and back off on 429.
 
+### 4a. What does not fit a V100-32GB at upstream's protocol [measured 2026-10-23, FINDINGS §8b]
+
+Upstream trains every SGD cell at `batch_size=64`, 50 epochs, fp32, no gradient checkpointing
+(`open_eeg_bench/training.py`). On the V100 that is fine for 6 of the 7 backbones (peak 0.6–3.2 GiB
+on arithmetic; LaBraM full fine-tune is the slowest at ~4 min) but **EEGPT with gradients through
+the backbone (lora, ia3, adalora, dora, oft, full_finetune, two_stages) OOMs at > 30 GiB on the
+first backward pass**. EEGPT frozen / ridge_probe run (3.2 GiB). Options, in order of fidelity:
+
+1. **Report those 7 EEGPT cells as "not runnable at protocol on V100-32GB"** — the honest default;
+   they are 7 × 8 datasets × seeds of the 1,512-experiment matrix.
+2. **Run them at a smaller batch as a flagged deviation**: `oeb_plan.py plan --training-override
+   eegpt:batch_size=16`. The exca uid changes with the training config, so the cell can never be
+   confused with the protocol cell in a pooled cache, and the row carries the batch size. Peak memory
+   at batch 16 is being measured (bench1c).
+3. NSG's `number_gpus` ≤ 4 does not help: upstream trains on one device.
+
 ## 5. Open items
 
 - [x] **Run the smoke shard on NSG** — **GREEN 2026-10-22** (§3b). First attempt hit the NSG-R

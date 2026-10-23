@@ -14,7 +14,8 @@ Config comes from shard.json next to this file:
   {"backbones": ["biot"], "datasets": ["arithmetic_zyma2019"], "strategies": ["frozen"],
    "heads": ["linear_head"], "seeds": [0], "device": "cuda",
    "torch": "2.4.1", "oeb": "0.6.0",
-   "checkpoints": {"reve": "reve_weights/reve-base/model.safetensors"}}   # optional, for gated repos
+   "checkpoints": {"reve": "reve_weights/reve-base/model.safetensors"},   # optional, for gated repos
+   "training_overrides": {"eegpt": {"batch_size": 16}}}                   # optional, flagged deviation
 
 Deps install to node-local scratch (system venv is read-only; see docs/dependencies.md). The
 heavy work runs in a FRESH interpreter that inherits PYTHONPATH, so the target's numpy/torch win
@@ -69,7 +70,7 @@ def install(cfg, summary):
     return r.returncode == 0
 
 
-def build_experiments(backbone_dict, datasets, heads, strategies, seeds, device, infra):
+def build_experiments(backbone_dict, datasets, heads, strategies, seeds, device, infra, training=None):
     """Upstream Experiment configs for one backbone, built the way benchmark() builds them but from
     the FULL backbone dump (benchmark() has no training_required_modules/parameters kwargs, so
     BIOT/LaBraM fail at build() through it in 0.6.0 -- measured 2026-10-22). exca UIDs are
@@ -79,7 +80,11 @@ def build_experiments(backbone_dict, datasets, heads, strategies, seeds, device,
     from open_eeg_bench.backbone import PretrainedBackbone
     from open_eeg_bench.default_configs.experiments import make_all_experiments
     backbone = PretrainedBackbone.model_validate(backbone_dict)
-    overrides = {"backbone": backbone, "training": {"device": device}, "infra": infra}
+    # `training` = per-backbone deviations from upstream's Training defaults (batch_size=64, 50 epochs):
+    # EEGPT with gradients through the backbone needs >32 GB at batch 64 (FINDINGS §8b), so a V100
+    # shard can set {"eegpt": {"batch_size": 16}}. It changes the exca uid, so such a cell never
+    # masquerades as the default-protocol cell in a pooled cache, and the deviation is in the row.
+    overrides = {"backbone": backbone, "training": {"device": device, **(training or {})}, "infra": infra}
     experiments, skipped = [], []
     for strategy in strategies:
         base = make_all_experiments(datasets=datasets, heads=heads, finetuning_strategies=[strategy],
@@ -134,7 +139,8 @@ def run_shard(cfg, summary):
             bb_dict.update(hub_repo=None, checkpoint_path=os.path.join(HERE, checkpoints[bb_name]))
         bb_cfgs[bb_name] = bb_dict
         exps, skip = build_experiments(bb_dict, cfg.get("datasets"), cfg.get("heads"),
-                                       cfg.get("strategies", ["frozen"]), cfg.get("seeds", [0]), device, infra)
+                                       cfg.get("strategies", ["frozen"]), cfg.get("seeds", [0]), device, infra,
+                                       training=cfg.get("training_overrides", {}).get(bb_name))
         experiments += exps
         skipped += [dict(backbone=bb_name, **k) for k in skip]
     summary["backbone_configs"] = bb_cfgs

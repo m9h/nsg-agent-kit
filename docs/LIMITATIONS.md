@@ -38,6 +38,10 @@ before you rely on a specific number).
 - **[policy]** Input must be **one `.zip` with exactly one top-level directory**. **[verify]** the
   **upload size ceiling** is not documented — keep zips small; don't ship large data/checkpoints if avoidable.
 
+- **[measured 2026-10-23]** **32 GB of GPU memory is the ceiling per model.** The V100-SXM2-32GB is the only
+  GPU; `number_gpus` buys parallel devices, not a bigger one. An fp32 fine-tune that needs more (e.g.
+  OpenEEGBench's EEGPT at batch 64) cannot run at its published protocol here — see `OPENEEGBENCH.md` §4a.
+
 ## 3. Software environment is fixed and locked down
 
 - **[measured]** The `PYTORCH_PY_EXPANSE` tool is **Python 3.11.4 + torch 2.0.1+cu117**, driver 580.82.07.

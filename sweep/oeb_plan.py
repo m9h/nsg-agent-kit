@@ -55,6 +55,12 @@ def plan(a):
             cfg = {"backbones": a.backbones, "datasets": [ds], "strategies": a.strategies,
                    "heads": a.heads, "seeds": [seed], "device": a.device,
                    "torch": a.torch, "oeb": a.oeb, "peft": a.peft, "transformers": a.transformers}
+            if a.training_override:
+                tov = {}
+                for spec in a.training_override:            # backbone:key=value, e.g. eegpt:batch_size=16
+                    bb, kv = spec.split(":", 1); k, v = kv.split("=", 1)
+                    tov.setdefault(bb, {})[k] = int(v) if v.isdigit() else float(v) if v.replace(".", "", 1).isdigit() else v
+                cfg["training_overrides"] = tov
             # brain-bzh/reve-base downloads anonymously since at least 2026-10-23 (277 MB, HTTP 200);
             # vendoring is only needed if HF gates it again -> --vendor-reve
             if a.vendor_reve and "reve" in a.backbones and os.path.isfile(a.reve_weights):
@@ -217,7 +223,8 @@ def collect(a):
         sm = json.load(open(s)); sh = sm["shard"]
         for bb_name, bb_dict in sm.get("backbone_configs", {}).items():
             exps, _ = build_experiments(bb_dict, sh.get("datasets"), sh.get("heads"), sh.get("strategies", ["frozen"]),
-                                        sh.get("seeds", [0]), sh.get("device", "cuda"), infra)
+                                        sh.get("seeds", [0]), sh.get("device", "cuda"), infra,
+                                        training=sh.get("training_overrides", {}).get(bb_name))
             experiments += exps
     missing = [e.infra.uid()[:80] for e in experiments if e.infra.status() == "not submitted"]
     for m in missing:
@@ -247,6 +254,9 @@ def main():
     # cleanly next to transformers 4.46.3 + torch 2.4.1 [measured locally].
     pp.add_argument("--peft", default="peft==0.21.2")
     pp.add_argument("--transformers", default="transformers==4.46.3")
+    pp.add_argument("--training-override", nargs="*", default=[], metavar="BACKBONE:KEY=VALUE",
+                    help="deviate from upstream Training defaults for one backbone (e.g. eegpt:batch_size=16 "
+                         "for the V100); changes the cell's uid and is recorded in the row")
     pp.add_argument("--runtime-hours", type=float, default=4.0)
     pp.add_argument("--reve-weights", default=os.path.join(HERE, "reve_weights", "reve-base", "model.safetensors"))
     pp.add_argument("--vendor-reve", action="store_true", help="ship local REVE weights in the zip (only if HF gates the repo)")
