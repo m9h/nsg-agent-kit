@@ -118,6 +118,26 @@ rules exclude it for BIOT (and any backbone with `training_required_*`), so the 
 in §4 is an upper bound. **Still unmeasured: the same shard on NSG itself** (V100, read-only venv,
 `$TMPDIR` install) — that is the remaining step, and the contract is written for it.
 
+## 3b. The same shard on NSG [measured 2026-10-22, exp-9-57, Tesla V100-SXM2-32GB]
+
+Job `NGBW-JOB-PYTORCH_PY_EXPANSE-DC769080…` via `oeb_plan.py submit` → `poll` → `merge` → `collect`
+(full log of the three attempts in `FINDINGS.md` §8):
+
+| | local (§3a) | NSG |
+|---|---|---|
+| queue | — | 7 min |
+| pip install of the pinned stack into `$TMPDIR` | pre-built venv | **149 s** |
+| shard (HF download + BIOT frozen fit + eval) | 54 s | **53 s** |
+| `test_balanced_accuracy` (BIOT, frozen, linear, seed 0) | 0.576389 | **0.576389** |
+| returned `output.tar.gz` | — | 16.6 kB |
+| `test_oeb_shard_contract.py` | 3 passed + provenance RED | **4 passed** |
+
+Two things had to be learned on the way and are now in the driver and `LIMITATIONS.md`: NSG-R's
+upload staging has hours-long outages (§5a — the submit exits 75 and the student loop waits), and
+the tool's Python has no `_sqlite3` (§3 — `pysqlite3-binary` is aliased in before exca is imported).
+Neither needed a container. The number is bit-identical to the local GPU, so NSG shards and local
+shards can be pooled into one leaderboard without a calibration step.
+
 ## 4. Sizing the public benchmark on NSG
 
 7 backbones × 8 datasets × 9 strategies × 1 head × 3 seeds = **1,512 experiments**; as
@@ -130,11 +150,9 @@ batches of ≤10 and back off on 429.
 
 ## 5. Open items
 
-- [ ] **Run the smoke shard on NSG** (`sweep/oeb/smoke/shards/arithmetic_zyma2019_s0.zip`) — it is
-      GREEN locally (§3a); the NSG run is what makes the V100/`$TMPDIR` path a measured fact.
-      **2026-10-22: submission attempted and refused by NSG-R** (`error creating tmp file for input
-      parameter input.infile_`, the staging outage of `LIMITATIONS.md` §5a; the July probe zip fails
-      identically, so it is the service). A retry loop is submitting every 5 min; result goes in §3b.
+- [x] **Run the smoke shard on NSG** — **GREEN 2026-10-22** (§3b). First attempt hit the NSG-R
+      staging outage (`LIMITATIONS.md` §5a, 10:55–~17:00), second hit the image's missing `_sqlite3`
+      (`LIMITATIONS.md` §3), third ran clean and reproduced the local number exactly.
 - [ ] Measure HF download throughput on the node (sets the shard shape for ISRUC/FACED/CHB-MIT).
 - [x] `transformers 5.20` in the resolve **is** fatal on torch 2.4.1: `peft 0.21` imports it eagerly
       and it dies with `NameError: name 'nn' is not defined` (`transformers/integrations/accelerate.py`).

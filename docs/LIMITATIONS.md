@@ -55,6 +55,14 @@ before you rely on a specific number).
   (`NameError: nn`) and `peft` ≥0.15 imports it eagerly — pin `transformers==4.46.3 peft==0.14.0`.
   Same genre as the peft→cu130 trap (FINDINGS §6a): the Volta-compatible torch is old enough that
   **every** torch-adjacent package must be pinned to its era.
+- **[measured 2026-10-22, exp-9-57]** **The tool's Python 3.11.4 has no `_sqlite3` extension.** `import sqlite3`
+  raises `ModuleNotFoundError: No module named '_sqlite3'`, which takes down anything that uses the
+  stdlib module at import time — exca (OpenEEGBench's runner) does, so `import open_eeg_bench` fails
+  after a clean install. **Abide by:** add `pysqlite3-binary` to the install and alias it before the
+  first import (`sys.modules["sqlite3"] = pysqlite3; sys.modules["sqlite3.dbapi2"] = pysqlite3.dbapi2`;
+  see `oeb_shard.py::shim_sqlite3`). Expect the same for other stdlib C extensions (`_bz2`, `_lzma`,
+  `_tkinter`…) — the image's Python was built with few optional modules; test `python -c "import X"`
+  in a probe before relying on one.
 - **[measured]** Fresh-interpreter rule: import heavy libs in a new `python` that inherits `PYTHONPATH`,
   or an already-imported image module (e.g. numpy) shadows your target install.
 

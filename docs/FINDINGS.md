@@ -270,3 +270,21 @@ underlying raw dataset (BCI Competition IV 2a), on two independent hardware/soft
 M5 gate (`docs/ROADMAP.md`): **substantively met** for one cell — a real LoRA-REVE result,
 reproduced end-to-end on NSG's free GPU, cross-hardware-validating the core method (not a strict
 numeric match to the DGX cell, which used a different split protocol).
+
+## 8. OpenEEGBench smoke shard on NSG (2026-10-22) — the upstream-code path, measured
+
+Shard `arithmetic_zyma2019_s0` (BIOT, frozen + linear head, seed 0; `ridge_probe` rejected by upstream's
+validator for BIOT and recorded as skipped), tool `PYTORCH_PY_EXPANSE`, 1 V100, 96 GB, 1 h limit.
+Driver = `sweep/oeb_shard.py`, submitted with `sweep/oeb_plan.py submit`, fetched with `poll`.
+
+| attempt | job | node | result |
+|---|---|---|---|
+| 0 (10:55–11:05 PDT, every 5 min) | — | — | **NSG-R refused the upload**: `Internal Cipres Error: error creating tmp file for input parameter input.infile_`. The July control zip failed identically → service outage (LIMITATIONS §5a). Cleared by 17:21. |
+| 1 (17:21) `…F6E9A7AD` | exp-9-57 | pip of the pinned stack **OK in 139 s** (torch 2.4.1, torchaudio 2.4.1, numpy<2, transformers 4.46.3, peft 0.14.0, open-eeg-bench 0.6.0 into `$TMPDIR`) — then `import open_eeg_bench` → exca → `import sqlite3` → **`ModuleNotFoundError: No module named '_sqlite3'`**. The image's Python 3.11.4 lacks the sqlite3 C extension (LIMITATIONS §3). Fixed in the driver with `pysqlite3-binary` aliased as `sqlite3` (`shim_sqlite3`), verified locally against a blocked `_sqlite3`. |
+| 2 (17:55) `…DC769080` | exp-9-57 | **GREEN.** Queue 7 min (SUBMITTED 17:55 → running 18:02), pip 149 s, shard 53 s, done 18:06. `Tesla V100-SXM2-32GB`, torch `2.4.1+cu121`, `sqlite3 = pysqlite3 2.6.0`. 1/1 experiment completed (`ridge_probe` skipped by upstream's validator, as locally). **`test_balanced_accuracy = 0.576389` — bit-identical to the local RTX 2080 run.** Returned tarball 16.6 kB (exca cache + summary; HF cache and libs stayed in `$TMPDIR`). `oeb_plan.py merge` + `collect` → `leaderboard_upstream.csv` via upstream `collect_completed_results` in read-only mode; `test_oeb_shard_contract.py` **4 passed**. |
+
+Measured facts this establishes: (a) the whole upstream OpenEEGBench stack runs on the V100 tool from a
+pip install into `$TMPDIR` in ~2.5 min, no container needed; (b) HF dataset download + exca cache work
+on the node; (c) results are deterministic across GPUs for this cell, so NSG numbers are comparable
+with local ones; (d) 15 min wall-clock per smoke job including queue — the budget per shard is the
+dataset download + 7 backbones × 9 strategies × ~1 min, not NSG overhead.

@@ -1,0 +1,2 @@
+adapter_stats,backbone,dataset,finetuning,fit_time,head,job_id,seed,status,test_balanced_accuracy,training
+"{'total_params': 3187458, 'trainable_params': 5378, 'trainable_pct': 0.1687237918, 'method': 'frozen'}",BIOT,braindecode/arithmetic_zyma2019,frozen,21.4901633263,linear,#local#,0,completed,0.5763888889,sgd

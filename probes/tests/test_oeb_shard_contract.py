@@ -48,12 +48,14 @@ def test_shard_ran_on_nsg():
         assert node.startswith("exp-"), (
             f"RED: shard_summary.json says node={node!r} -- this is not an NSG/Expanse run. "
             f"Submit with `python sweep/oeb_plan.py submit --name smoke`, then `poll`, then `merge`.")
-        assert "V100" in gpu, f"expected an Expanse V100, got gpu={gpu!r}"
+        if "shard_error" not in s:          # gpu is probed after the imports; a crashed shard has no gpu field
+            assert "V100" in gpu, f"expected an Expanse V100, got gpu={gpu!r}"
 
 
 def test_shard_installed_pinned_stack():
     for s in _summaries():
         assert s.get("pip_ok") is True, s.get("pip_err")
+        assert "shard_error" not in s, f"shard crashed before probing torch: {s['shard_error']}"
         assert s.get("torch", "").startswith("2.4.1"), s.get("torch")   # the Volta-safe pin (FINDINGS §6a)
         assert s.get("cuda") is True, "shard did not see the V100"
 

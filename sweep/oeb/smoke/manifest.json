@@ -5,11 +5,11 @@
       "shard": "arithmetic_zyma2019_s0",
       "zip": "oeb/smoke/shards/arithmetic_zyma2019_s0.zip",
       "n_cells": 2,
-      "zip_bytes": 4031
+      "zip_bytes": 4358
     }
   ],
   "vparams_hint": {
-    "runtime": 4.0,
+    "runtime": 1.0,
     "number_gpus": 1,
     "number_gbmemorypernode": 96
   }

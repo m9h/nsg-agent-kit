@@ -46,6 +46,7 @@ BIDS paths are **git-annex symlinks** with materialized content — follow symli
 | Deps skip already-present packages and then break | add `--ignore-installed` so the target is self-contained |
 | Old numpy shadows your install | import in a **fresh interpreter** with `PYTHONPATH` set — importing numpy first pins the image's copy |
 | Image torch is **2.0.1**; newer libs silently drop it | pin `numpy<2` and `transformers==4.44.2`, or install `torch==2.4.1` (cu121: has `torch.nn.attention`, keeps V100/sm_70 — **not** cu130, which dropped Volta) |
+| `ModuleNotFoundError: No module named '_sqlite3'` (or another stdlib C extension) | the image's Python 3.11.4 was built without it; `pip install pysqlite3-binary` and alias it as `sqlite3` in `sys.modules` before importing the library that needs it (`sweep/oeb_shard.py::shim_sqlite3`) |
 | NSG returns the **whole working dir** | install deps to `$TMPDIR`, not `./` — a `jax[cuda12]` install in `./` made a 3.3 GB download |
 | `hnn_core` on `PY_EXPANSE` is **0.3**, not 0.6.x | do not use it where version matters; check `__version__` and report it in your results |
 | Queue latency is hours and variable | one cheap probe job first; never iterate interactively |

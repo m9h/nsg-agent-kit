@@ -52,9 +52,11 @@ def install(cfg, summary):
     # transformers 5.x is broken on torch 2.4.1 (NameError: nn in integrations/accelerate.py) and
     # peft >=0.15 imports it eagerly -> pin both to the last 4.x-era pair that satisfies
     # open-eeg-bench's peft>=0.14 [measured locally 2026-10-22].
+    # pysqlite3-binary: the tool's Python 3.11.4 has NO _sqlite3 extension (measured on exp-9-57,
+    # 2026-10-22, job ...F6E9A7AD) and exca imports sqlite3 -> shimmed in run_shard().
     pkgs = [f"torch=={torch_pin}", f"torchaudio=={torch_pin}", "numpy<2",
             cfg.get("transformers", "transformers==4.46.3"), cfg.get("peft", "peft==0.14.0"),
-            f"open-eeg-bench=={oeb_pin}"] + cfg.get("extra_pip", [])
+            f"open-eeg-bench=={oeb_pin}", "pysqlite3-binary"] + cfg.get("extra_pip", [])
     t0 = time.time()
     r = subprocess.run([sys.executable, "-m", "pip", "install", "--target", LIBS,
                         "--ignore-installed", "-q", *pkgs], capture_output=True, text=True, timeout=2400)
@@ -91,9 +93,24 @@ def build_experiments(backbone_dict, datasets, heads, strategies, seeds, device,
     return experiments, skipped
 
 
+def shim_sqlite3(summary):
+    """NSG's PyTorch-tool Python (3.11.4) ships without the _sqlite3 extension, so `import sqlite3`
+    raises ModuleNotFoundError and exca (upstream's runner) cannot be imported. pysqlite3-binary is
+    a drop-in: alias it as sqlite3 BEFORE anything imports exca. [measured 2026-10-22]"""
+    try:
+        import sqlite3  # noqa: F401
+        summary["sqlite3"] = "stdlib"
+    except ModuleNotFoundError:
+        import pysqlite3
+        sys.modules["sqlite3"] = pysqlite3
+        sys.modules["sqlite3.dbapi2"] = pysqlite3.dbapi2
+        summary["sqlite3"] = f"pysqlite3 {pysqlite3.version} (no _sqlite3 in the image)"
+
+
 def run_shard(cfg, summary):
     """Runs in the fresh interpreter. Builds upstream Experiment configs and runs them in-process
     (cluster=None) with the exca cache under ./results."""
+    shim_sqlite3(summary)
     import open_eeg_bench as oeb
     from open_eeg_bench.default_configs import backbones as BB
     from open_eeg_bench.default_configs.experiments import make_all_experiments
