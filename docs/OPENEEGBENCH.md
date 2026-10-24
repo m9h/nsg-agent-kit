@@ -148,6 +148,23 @@ per job is the single largest waste — it argues for `--backbones` shards of *a
 ISRUC so the download is paid 7×3 times, not 63×3. Fair-use note (`LIMITATIONS.md` §1): submit in
 batches of ≤10 and back off on 429.
 
+**The first public sweep (`public1`, submitted 2026-10-23)** is exactly that shape, seed 0 only:
+
+```
+python sweep/oeb_plan.py plan --name public1 --backbones biot labram bendr cbramod signal_jepa reve eegpt \
+  --datasets arithmetic_zyma2019 bcic2a bcic2020_3 physionet mdd_mumtaz2016 chbmit faced isruc_sleep \
+  --strategies frozen ridge_probe lora ia3 adalora dora oft full_finetune two_stages --seeds 0 \
+  --runtime-hours 16 --split-by-backbone chbmit faced isruc_sleep --split-runtime-hours 48
+python sweep/oeb_plan.py submit --name public1 --max-inflight 6     # repeat after each poll
+```
+
+= 26 jobs (5 dataset shards of 63 cells at 16 h + 21 dataset×backbone shards of 9 cells at 48 h),
+504 experiments before upstream's validator drops the invalid pairs. `--max-inflight 6` keeps at most
+six of this plan's jobs unfetched, so the matrix goes out in batches as earlier jobs finish; the loop
+is `until all fetched: submit --max-inflight 6; poll; sleep 300`. The 7 trainable EEGPT cells per
+dataset run at protocol and are recorded as OOM (§4a); the contract treats exactly those as the
+documented V100 limit and any other OOM as a failure.
+
 ### 4a. What does not fit a V100-32GB at upstream's protocol [measured 2026-10-23, FINDINGS §8b]
 
 Upstream trains every SGD cell at `batch_size=64`, 50 epochs, fp32, no gradient checkpointing
@@ -171,7 +188,11 @@ first backward pass**. EEGPT frozen / ridge_probe run (3.2 GiB). Options, in ord
 - [x] **Run the smoke shard on NSG** — **GREEN 2026-10-22** (§3b). First attempt hit the NSG-R
       staging outage (`LIMITATIONS.md` §5a, 10:55–~17:00), second hit the image's missing `_sqlite3`
       (`LIMITATIONS.md` §3), third ran clean and reproduced the local number exactly.
-- [ ] Measure HF download throughput on the node (sets the shard shape for ISRUC/FACED/CHB-MIT).
+- [ ] Measure HF download throughput on the node (sets the shard shape for ISRUC/FACED/CHB-MIT) —
+      `public1` records it per shard (`pip_seconds` vs first-cell wall) for 0.1–13 GB datasets.
+- [ ] **`public1` sweep in flight (2026-10-23):** 8 public datasets × seed 0 × 7 backbones × 9 strategies
+      as 26 jobs (§4). First submit hit the NSG-R staging outage again (third time; `LIMITATIONS.md` §5a);
+      the loop retries every 5 min. Results → FINDINGS §9, `sweep/oeb/public1/leaderboard.csv`.
 - [x] `transformers 5.20` in the resolve **is** fatal on torch 2.4.1: `peft 0.21` imports it eagerly
       and it dies with `NameError: name 'nn' is not defined` (`transformers/integrations/accelerate.py`).
       Pinned **`transformers==4.46.3` + `peft==0.21.2`** (0.14.0 was tried first and is too old for upstream's adapter configs — FINDINGS §8a);

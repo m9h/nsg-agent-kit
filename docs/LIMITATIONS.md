@@ -90,8 +90,8 @@ before you rely on a specific number).
 
 ## 5a. NSG-R itself has outages — tell them apart from your own bugs
 
-Observed twice (2026-07-26, 2026-10-22): every `POST /job/<user>` with an `input.infile_` upload
-returns
+Observed three times (2026-07-26; 2026-10-22 10:55–~17:00 PDT; again 2026-10-23 ~23:50 PDT): every
+`POST /job/<user>` with an `input.infile_` upload returns
 
 ```
 <displayMessage>Internal Cipres Error</displayMessage>

@@ -1,0 +1,30 @@
+{
+  "backbones": [
+    "reve"
+  ],
+  "datasets": [
+    "isruc_sleep"
+  ],
+  "strategies": [
+    "frozen",
+    "ridge_probe",
+    "lora",
+    "ia3",
+    "adalora",
+    "dora",
+    "oft",
+    "full_finetune",
+    "two_stages"
+  ],
+  "heads": [
+    "linear_head"
+  ],
+  "seeds": [
+    0
+  ],
+  "device": "cuda",
+  "torch": "2.4.1",
+  "oeb": "0.6.0",
+  "peft": "peft==0.21.2",
+  "transformers": "transformers==4.46.3"
+}

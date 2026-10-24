@@ -46,13 +46,21 @@ def plan(a):
     shards_dir = os.path.join(root, "shards")
     os.makedirs(shards_dir, exist_ok=True)
     manifest = []
+    # (dataset, seed) is the shard unit; the big datasets (OPENEEGBENCH.md §4: chbmit/faced 4.7 GB,
+    # isruc_sleep 13 GB) are split further by backbone so one shard stays well inside 48 h.
+    units = []
     for ds in a.datasets:
         for seed in a.seeds:
-            sid = f"{ds}_s{seed}"
+            if ds in (a.split_by_backbone or []):
+                units += [(f"{ds}_{bb}_s{seed}", ds, seed, [bb], a.split_runtime_hours) for bb in a.backbones]
+            else:
+                units.append((f"{ds}_s{seed}", ds, seed, a.backbones, a.runtime_hours))
+    for sid, ds, seed, backbones, runtime in units:
+        if True:
             d = os.path.join(shards_dir, sid)
             os.makedirs(d, exist_ok=True)
             shutil.copy(os.path.join(HERE, "oeb_shard.py"), os.path.join(d, "run.py"))
-            cfg = {"backbones": a.backbones, "datasets": [ds], "strategies": a.strategies,
+            cfg = {"backbones": backbones, "datasets": [ds], "strategies": a.strategies,
                    "heads": a.heads, "seeds": [seed], "device": a.device,
                    "torch": a.torch, "oeb": a.oeb, "peft": a.peft, "transformers": a.transformers}
             if a.training_override:
@@ -63,7 +71,7 @@ def plan(a):
                 cfg["training_overrides"] = tov
             # brain-bzh/reve-base downloads anonymously since at least 2026-10-23 (277 MB, HTTP 200);
             # vendoring is only needed if HF gates it again -> --vendor-reve
-            if a.vendor_reve and "reve" in a.backbones and os.path.isfile(a.reve_weights):
+            if a.vendor_reve and "reve" in backbones and os.path.isfile(a.reve_weights):
                 os.makedirs(os.path.join(d, "reve_weights", "reve-base"), exist_ok=True)
                 shutil.copy(a.reve_weights, os.path.join(d, "reve_weights", "reve-base", "model.safetensors"))
                 cfg["checkpoints"] = {"reve": "reve_weights/reve-base/model.safetensors"}
@@ -76,15 +84,15 @@ def plan(a):
                         p = os.path.join(base, f)
                         z.write(p, os.path.join(sid, os.path.relpath(p, d)))
             manifest.append({"shard": sid, "zip": os.path.relpath(zpath, HERE),
-                             "n_cells": len(a.backbones) * len(a.strategies) * len(a.heads),
-                             "zip_bytes": os.path.getsize(zpath)})
+                             "n_cells": len(backbones) * len(a.strategies) * len(a.heads),
+                             "runtime": runtime, "zip_bytes": os.path.getsize(zpath)})
     json.dump({"name": a.name, "shards": manifest, "vparams_hint": {
         "runtime": a.runtime_hours, "number_gpus": 1, "number_gbmemorypernode": 96}},
         open(os.path.join(root, "manifest.json"), "w"), indent=2)
     tot = sum(m["n_cells"] for m in manifest)
     print(f"{len(manifest)} shards, {tot} experiments -> {root}")
     for m in manifest:
-        print(f"  {m['shard']:28s} {m['n_cells']:4d} cells  {m['zip_bytes']/1e6:7.1f} MB")
+        print(f"  {m['shard']:34s} {m['n_cells']:4d} cells  {m['runtime']:4.0f} h  {m['zip_bytes']/1e6:7.1f} MB")
 
 
 def _nsgr(args, extra=""):
@@ -114,13 +122,19 @@ def submit(a):
     jobs_path = os.path.join(root, "jobs.json")
     jobs = json.load(open(jobs_path)) if os.path.isfile(jobs_path) else {}
     tool = os.environ.get("NSG_TOOL", "PYTORCH_PY_EXPANSE")
+    # fair use (LIMITATIONS.md §1): never fan the whole matrix out at once. --max-inflight N submits
+    # only while fewer than N of this plan's jobs are unfetched; a `poll; submit` loop tops it up.
+    inflight = sum(1 for j in jobs.values() if not j.get("fetched"))
     for m in man["shards"]:
         sid = m["shard"]
         if sid in jobs and not a.resubmit:
-            print(f"  {sid}: already submitted as {jobs[sid]['handle']} (use --resubmit to force)")
             continue
+        if a.max_inflight and inflight >= a.max_inflight:
+            left = sum(1 for x in man["shards"] if x["shard"] not in jobs)
+            print(f"  {inflight} in flight >= --max-inflight {a.max_inflight}; {left} shard(s) wait")
+            break
         vp = {"filename": "run.py", "subdirname": sid,
-              "runtime": a.runtime_hours or hint.get("runtime", 4.0),
+              "runtime": a.runtime_hours or m.get("runtime") or hint.get("runtime", 4.0),
               "number_gpus": hint.get("number_gpus", 1),
               "number_gbmemorypernode": a.gb_memory or hint.get("number_gbmemorypernode", 96)}
         extra = " ".join(f"-F vparam.{k}_={v}" for k, v in vp.items())
@@ -139,7 +153,8 @@ def submit(a):
                      "stage": _tag(xml, "jobStage")}
         print(f"  {sid}: {handle}  ({jobs[sid]['stage']})")
         json.dump(jobs, open(jobs_path, "w"), indent=2)
-    print(f"-> {jobs_path}")
+        inflight += 1
+    print(f"-> {jobs_path}  ({len(jobs)}/{len(man['shards'])} submitted)")
 
 
 def poll(a):
@@ -170,8 +185,9 @@ def poll(a):
             pending += 1
             print(f"  {sid}: {j['stage']}  {j['last_message'] or ''}")
     json.dump(jobs, open(jobs_path, "w"), indent=2)
+    done = sum(1 for j in jobs.values() if j.get("fetched"))
     if pending:
-        raise SystemExit(f"{pending} job(s) still running; run poll again (NSG queue+run is typically 5-15 min for a smoke shard)")
+        raise SystemExit(f"{done} fetched, {pending} job(s) still running; run poll again (NSG queue+run is typically 5-15 min for a smoke shard)")
     print("all jobs fetched -> `oeb_plan.py merge --name %s`" % a.name)
 
 
@@ -258,6 +274,9 @@ def main():
                     help="deviate from upstream Training defaults for one backbone (e.g. eegpt:batch_size=16 "
                          "for the V100); changes the cell's uid and is recorded in the row")
     pp.add_argument("--runtime-hours", type=float, default=4.0)
+    pp.add_argument("--split-by-backbone", nargs="*", default=[], choices=PUBLIC_DATASETS, metavar="DATASET",
+                    help="make one shard per backbone for these (big) datasets instead of one per dataset")
+    pp.add_argument("--split-runtime-hours", type=float, default=48.0, help="runtime for the split shards")
     pp.add_argument("--reve-weights", default=os.path.join(HERE, "reve_weights", "reve-base", "model.safetensors"))
     pp.add_argument("--vendor-reve", action="store_true", help="ship local REVE weights in the zip (only if HF gates the repo)")
     pp.set_defaults(fn=plan)
@@ -266,6 +285,8 @@ def main():
     ps.add_argument("--runtime-hours", type=float, default=None, help="override manifest vparams_hint")
     ps.add_argument("--gb-memory", type=int, default=None)
     ps.add_argument("--resubmit", action="store_true")
+    ps.add_argument("--max-inflight", type=int, default=None,
+                    help="submit only while fewer than N jobs of this plan are unfetched (fair use)")
     ps.set_defaults(fn=submit)
     po = sub.add_parser("poll", help="refresh job stages; fetch finished jobs into fetched/<shard>/")
     po.add_argument("--name", required=True)

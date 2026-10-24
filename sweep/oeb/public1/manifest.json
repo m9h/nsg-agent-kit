@@ -1,0 +1,192 @@
+{
+  "name": "public1",
+  "shards": [
+    {
+      "shard": "arithmetic_zyma2019_s0",
+      "zip": "oeb/public1/shards/arithmetic_zyma2019_s0.zip",
+      "n_cells": 63,
+      "runtime": 16.0,
+      "zip_bytes": 5596
+    },
+    {
+      "shard": "bcic2a_s0",
+      "zip": "oeb/public1/shards/bcic2a_s0.zip",
+      "n_cells": 63,
+      "runtime": 16.0,
+      "zip_bytes": 5534
+    },
+    {
+      "shard": "bcic2020_3_s0",
+      "zip": "oeb/public1/shards/bcic2020_3_s0.zip",
+      "n_cells": 63,
+      "runtime": 16.0,
+      "zip_bytes": 5552
+    },
+    {
+      "shard": "physionet_s0",
+      "zip": "oeb/public1/shards/physionet_s0.zip",
+      "n_cells": 63,
+      "runtime": 16.0,
+      "zip_bytes": 5548
+    },
+    {
+      "shard": "mdd_mumtaz2016_s0",
+      "zip": "oeb/public1/shards/mdd_mumtaz2016_s0.zip",
+      "n_cells": 63,
+      "runtime": 16.0,
+      "zip_bytes": 5572
+    },
+    {
+      "shard": "chbmit_biot_s0",
+      "zip": "oeb/public1/shards/chbmit_biot_s0.zip",
+      "n_cells": 9,
+      "runtime": 48.0,
+      "zip_bytes": 5523
+    },
+    {
+      "shard": "chbmit_labram_s0",
+      "zip": "oeb/public1/shards/chbmit_labram_s0.zip",
+      "n_cells": 9,
+      "runtime": 48.0,
+      "zip_bytes": 5533
+    },
+    {
+      "shard": "chbmit_bendr_s0",
+      "zip": "oeb/public1/shards/chbmit_bendr_s0.zip",
+      "n_cells": 9,
+      "runtime": 48.0,
+      "zip_bytes": 5528
+    },
+    {
+      "shard": "chbmit_cbramod_s0",
+      "zip": "oeb/public1/shards/chbmit_cbramod_s0.zip",
+      "n_cells": 9,
+      "runtime": 48.0,
+      "zip_bytes": 5538
+    },
+    {
+      "shard": "chbmit_signal_jepa_s0",
+      "zip": "oeb/public1/shards/chbmit_signal_jepa_s0.zip",
+      "n_cells": 9,
+      "runtime": 48.0,
+      "zip_bytes": 5558
+    },
+    {
+      "shard": "chbmit_reve_s0",
+      "zip": "oeb/public1/shards/chbmit_reve_s0.zip",
+      "n_cells": 9,
+      "runtime": 48.0,
+      "zip_bytes": 5525
+    },
+    {
+      "shard": "chbmit_eegpt_s0",
+      "zip": "oeb/public1/shards/chbmit_eegpt_s0.zip",
+      "n_cells": 9,
+      "runtime": 48.0,
+      "zip_bytes": 5529
+    },
+    {
+      "shard": "faced_biot_s0",
+      "zip": "oeb/public1/shards/faced_biot_s0.zip",
+      "n_cells": 9,
+      "runtime": 48.0,
+      "zip_bytes": 5518
+    },
+    {
+      "shard": "faced_labram_s0",
+      "zip": "oeb/public1/shards/faced_labram_s0.zip",
+      "n_cells": 9,
+      "runtime": 48.0,
+      "zip_bytes": 5528
+    },
+    {
+      "shard": "faced_bendr_s0",
+      "zip": "oeb/public1/shards/faced_bendr_s0.zip",
+      "n_cells": 9,
+      "runtime": 48.0,
+      "zip_bytes": 5523
+    },
+    {
+      "shard": "faced_cbramod_s0",
+      "zip": "oeb/public1/shards/faced_cbramod_s0.zip",
+      "n_cells": 9,
+      "runtime": 48.0,
+      "zip_bytes": 5533
+    },
+    {
+      "shard": "faced_signal_jepa_s0",
+      "zip": "oeb/public1/shards/faced_signal_jepa_s0.zip",
+      "n_cells": 9,
+      "runtime": 48.0,
+      "zip_bytes": 5553
+    },
+    {
+      "shard": "faced_reve_s0",
+      "zip": "oeb/public1/shards/faced_reve_s0.zip",
+      "n_cells": 9,
+      "runtime": 48.0,
+      "zip_bytes": 5519
+    },
+    {
+      "shard": "faced_eegpt_s0",
+      "zip": "oeb/public1/shards/faced_eegpt_s0.zip",
+      "n_cells": 9,
+      "runtime": 48.0,
+      "zip_bytes": 5524
+    },
+    {
+      "shard": "isruc_sleep_biot_s0",
+      "zip": "oeb/public1/shards/isruc_sleep_biot_s0.zip",
+      "n_cells": 9,
+      "runtime": 48.0,
+      "zip_bytes": 5546
+    },
+    {
+      "shard": "isruc_sleep_labram_s0",
+      "zip": "oeb/public1/shards/isruc_sleep_labram_s0.zip",
+      "n_cells": 9,
+      "runtime": 48.0,
+      "zip_bytes": 5556
+    },
+    {
+      "shard": "isruc_sleep_bendr_s0",
+      "zip": "oeb/public1/shards/isruc_sleep_bendr_s0.zip",
+      "n_cells": 9,
+      "runtime": 48.0,
+      "zip_bytes": 5551
+    },
+    {
+      "shard": "isruc_sleep_cbramod_s0",
+      "zip": "oeb/public1/shards/isruc_sleep_cbramod_s0.zip",
+      "n_cells": 9,
+      "runtime": 48.0,
+      "zip_bytes": 5562
+    },
+    {
+      "shard": "isruc_sleep_signal_jepa_s0",
+      "zip": "oeb/public1/shards/isruc_sleep_signal_jepa_s0.zip",
+      "n_cells": 9,
+      "runtime": 48.0,
+      "zip_bytes": 5581
+    },
+    {
+      "shard": "isruc_sleep_reve_s0",
+      "zip": "oeb/public1/shards/isruc_sleep_reve_s0.zip",
+      "n_cells": 9,
+      "runtime": 48.0,
+      "zip_bytes": 5547
+    },
+    {
+      "shard": "isruc_sleep_eegpt_s0",
+      "zip": "oeb/public1/shards/isruc_sleep_eegpt_s0.zip",
+      "n_cells": 9,
+      "runtime": 48.0,
+      "zip_bytes": 5552
+    }
+  ],
+  "vparams_hint": {
+    "runtime": 16.0,
+    "number_gpus": 1,
+    "number_gbmemorypernode": 96
+  }
+}

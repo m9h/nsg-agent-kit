@@ -64,9 +64,9 @@ def test_shard_ran_every_cell_to_completion():
     for s in _summaries():
         assert "shard_error" not in s, s.get("trace")
         assert s.get("n_experiments", 0) > 0
-        assert s.get("n_completed") == s.get("n_experiments"), [
-            (r.get("dataset"), r.get("finetuning"), r.get("exception")) for r in s["rows"]
-            if r.get("status") != "completed"]
+        not_done = [(r.get("backbone"), r.get("dataset"), r.get("finetuning"), (r.get("exception") or "")[:80])
+                    for r in s["rows"] if r.get("status") != "completed" and not _known_v100_oom(r)]
+        assert not not_done, not_done          # the documented EEGPT/V100 OOM cells are allowed (see below)
 
 
 def test_reference_cell_beats_chance():
@@ -85,6 +85,19 @@ def test_reference_cell_beats_chance():
         pytest.skip("no BIOT/frozen/linear reference cell in this shard")
 
 
+# EEGPT with gradients through the backbone needs > 32 GB at upstream's protocol (batch 64): it OOMs
+# on the first backward on every V100-32GB (FINDINGS §8b/§8c, LIMITATIONS §2). That is a documented
+# platform limit, reported per dataset as "not runnable at protocol", not a stack problem.
+KNOWN_V100_OOM = ("EEGPT", {"lora", "ia3", "adalora", "dora", "oft", "full", "full_finetune", "two_stages"})
+
+
+def _known_v100_oom(r):
+    bb, strat = KNOWN_V100_OOM
+    exc = r.get("exception") or ""
+    return (bb in (r.get("backbone") or "") and r.get("finetuning") in strat
+            and ("out of memory" in exc or "OutOfMemoryError" in exc))
+
+
 def test_no_cell_failed_for_a_software_reason():
     """A cell that raised is a stack problem (wrong pin, missing module, OOM), never a benchmark result.
     Lists every distinct exception so a student sees the pin to fix, not 35 tracebacks."""
@@ -92,7 +105,16 @@ def test_no_cell_failed_for_a_software_reason():
     bad = collections.Counter()
     for s in _summaries():
         for r in s["rows"]:
-            if r.get("status") != "completed":
+            if r.get("status") != "completed" and not _known_v100_oom(r):
                 last = (r.get("exception") or "?").strip().splitlines()[-1][:120]
                 bad[last] += 1
     assert not bad, "\n".join(f"{n:3d} x {m}" for m, n in bad.most_common())
+
+
+def test_only_the_documented_eegpt_cells_hit_the_32gb_ceiling():
+    """Every OOM must be one of the 7 EEGPT strategies documented as not runnable at protocol on a
+    V100-32GB; an OOM anywhere else is new information that belongs in LIMITATIONS §2."""
+    other = [(r.get("backbone"), r.get("finetuning"), r.get("dataset"))
+             for s in _summaries() for r in s["rows"]
+             if "out of memory" in (r.get("exception") or "") and not _known_v100_oom(r)]
+    assert not other, f"undocumented OOM cells: {other}"
