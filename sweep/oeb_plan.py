@@ -170,6 +170,10 @@ def submit(a):
             continue
         if sid in jobs and not a.resubmit and sid not in redo:
             continue
+        if a.max_inflight and inflight >= a.max_inflight:
+            left = sum(1 for x in man["shards"] if x["shard"] not in jobs) + len(redo)
+            print(f"  {inflight} in flight >= --max-inflight {a.max_inflight}; ~{left} shard(s) wait")
+            break
         if sid in jobs:                                   # re-run: keep the old attempt's files aside
             old = os.path.join(root, "fetched", sid)
             if os.path.isdir(old):
@@ -178,10 +182,6 @@ def submit(a):
             prev = jobs[sid].get("previous", []) + [jobs[sid]["handle"]]
         else:
             prev = []
-        if a.max_inflight and inflight >= a.max_inflight:
-            left = sum(1 for x in man["shards"] if x["shard"] not in jobs)
-            print(f"  {inflight} in flight >= --max-inflight {a.max_inflight}; {left} shard(s) wait")
-            break
         vp = {"filename": "run.py", "subdirname": sid,
               "runtime": a.runtime_hours or m.get("runtime") or hint.get("runtime", 4.0),
               "number_gpus": hint.get("number_gpus", 1),
