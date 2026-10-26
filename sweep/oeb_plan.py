@@ -95,6 +95,20 @@ def plan(a):
         print(f"  {m['shard']:34s} {m['n_cells']:4d} cells  {m['runtime']:4.0f} h  {m['zip_bytes']/1e6:7.1f} MB")
 
 
+def _zip_with_token(zpath, sid, token):
+    """The committed shard zip never holds a secret. With --hf-token-file, a copy is made under
+    $TMPDIR (or the scratchpad) with `<sid>/hf_token` added; run.py reads and deletes it."""
+    if not token:
+        return zpath
+    tmp = os.path.join(os.environ.get("TMPDIR", "/tmp"), "nsgkit-submit")
+    os.makedirs(tmp, mode=0o700, exist_ok=True)
+    out = os.path.join(tmp, os.path.basename(zpath))
+    shutil.copy(zpath, out)
+    with zipfile.ZipFile(out, "a") as z:
+        z.writestr(f"{sid}/hf_token", token + "\n")
+    return out
+
+
 def _nsgr(args, extra=""):
     """nsgr.sh needs NSG_URL/USER/APPKEY/PASSWORD in the env (source nsgr/config.env; read -s
     NSG_PASSWORD). NSG_EXTRA is overridden per call so a stale one in config.env can't point a
@@ -125,8 +139,11 @@ def submit(a):
     # fair use (LIMITATIONS.md §1): never fan the whole matrix out at once. --max-inflight N submits
     # only while fewer than N of this plan's jobs are unfetched; a `poll; submit` loop tops it up.
     inflight = sum(1 for j in jobs.values() if not j.get("fetched"))
+    token = open(os.path.expanduser(a.hf_token_file)).read().strip() if a.hf_token_file else None
     for m in man["shards"]:
         sid = m["shard"]
+        if a.only and sid not in a.only:
+            continue
         if sid in jobs and not a.resubmit:
             continue
         if a.max_inflight and inflight >= a.max_inflight:
@@ -138,7 +155,7 @@ def submit(a):
               "number_gpus": hint.get("number_gpus", 1),
               "number_gbmemorypernode": a.gb_memory or hint.get("number_gbmemorypernode", 96)}
         extra = " ".join(f"-F vparam.{k}_={v}" for k, v in vp.items())
-        xml = _nsgr(["submit", tool, os.path.join(HERE, m["zip"])], extra)
+        xml = _nsgr(["submit", tool, _zip_with_token(os.path.join(HERE, m["zip"]), sid, token)], extra)
         handle = _tag(xml, "jobHandle")
         if not handle:
             if "error creating tmp file for input parameter" in xml:
@@ -285,6 +302,10 @@ def main():
     ps.add_argument("--runtime-hours", type=float, default=None, help="override manifest vparams_hint")
     ps.add_argument("--gb-memory", type=int, default=None)
     ps.add_argument("--resubmit", action="store_true")
+    ps.add_argument("--only", nargs="*", default=None, metavar="SHARD", help="restrict to these shard ids")
+    ps.add_argument("--hf-token-file", default=None, metavar="PATH",
+                    help="read a Hugging Face token (e.g. ~/.cache/huggingface/token) and ship it in a submit-time "
+                         "copy of the zip as <shard>/hf_token; lifts HF's per-IP anonymous rate limit (LIMITATIONS §6)")
     ps.add_argument("--max-inflight", type=int, default=None,
                     help="submit only while fewer than N jobs of this plan are unfetched (fair use)")
     ps.set_defaults(fn=submit)

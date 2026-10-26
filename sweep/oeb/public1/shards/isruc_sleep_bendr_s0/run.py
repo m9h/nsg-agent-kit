@@ -221,8 +221,22 @@ def main():
     json.dump(summary, open(SUMMARY, "w"), indent=2)
     env = dict(os.environ, PYTHONPATH=LIBS + os.pathsep + os.environ.get("PYTHONPATH", ""),
                HF_HOME=HF_HOME, NSGKIT_OEB_CHILD="1", WANDB_MODE="disabled")
-    if cfg.get("hf_token"):
+    # HF rate-limits ANONYMOUS downloads per IP, and Expanse's egress NAT is shared by every job
+    # (public1 2026-10-25: "We had to rate limit your IP (198.202.103.196)" -> incomplete zarr
+    # snapshot -> every cell fails; physionet's 4,584-file pull hit the 16 h limit). A token lifts
+    # it. `oeb_plan.py submit --hf-token-file` drops it next to run.py at submit time; it is never
+    # in shard.json (committed) and never in the returned tarball (deleted before the child runs).
+    tok_file = os.path.join(HERE, "hf_token")
+    if os.path.isfile(tok_file):
+        env["HF_TOKEN"] = open(tok_file).read().strip()
+        os.remove(tok_file)
+        summary["hf_token"] = "yes (file, removed)"
+    elif cfg.get("hf_token"):
         env["HF_TOKEN"] = cfg["hf_token"]
+        summary["hf_token"] = "yes (shard.json)"
+    else:
+        summary["hf_token"] = "no (anonymous -> HF per-IP rate limit, LIMITATIONS §6)"
+    json.dump(summary, open(SUMMARY, "w"), indent=2)
     r = subprocess.run([sys.executable, os.path.abspath(__file__)], env=env)
     sys.exit(r.returncode)
 

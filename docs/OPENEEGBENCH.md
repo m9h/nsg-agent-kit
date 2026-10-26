@@ -192,7 +192,11 @@ first backward pass**. EEGPT frozen / ridge_probe run (3.2 GiB). Options, in ord
       `public1` records it per shard (`pip_seconds` vs first-cell wall) for 0.1–13 GB datasets.
 - [ ] **`public1` sweep in flight (2026-10-23):** 8 public datasets × seed 0 × 7 backbones × 9 strategies
       as 26 jobs (§4). First submit hit the NSG-R staging outage again (third time; `LIMITATIONS.md` §5a);
-      the loop retries every 5 min. Results → FINDINGS §9, `sweep/oeb/public1/leaderboard.csv`.
+      the loop retries every 5 min (it cleared after 25 h). **First 10 fetched shards all empty**
+      (FINDINGS §9): NSG workspace disk full right after the outage (5 shards lost), then Hugging Face
+      per-IP rate limiting of anonymous pulls from Expanse (5 shards 0/9, physionet timed out at 16 h).
+      Resubmit needs `submit --hf-token-file … --only …` (`LIMITATIONS.md` §6). The loop was stopped
+      by the host for memory pressure on 2026-10-25 19:38 PDT; 13/26 submitted, 3 still on NSG.
 - [x] `transformers 5.20` in the resolve **is** fatal on torch 2.4.1: `peft 0.21` imports it eagerly
       and it dies with `NameError: name 'nn' is not defined` (`transformers/integrations/accelerate.py`).
       Pinned **`transformers==4.46.3` + `peft==0.21.2`** (0.14.0 was tried first and is too old for upstream's adapter configs — FINDINGS §8a);

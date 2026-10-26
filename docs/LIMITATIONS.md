@@ -108,6 +108,15 @@ gateway's upload-staging disk, not your zip: the same July probe zip that ran to
 - If it lasts more than a day, mail nsghelp@sdsc.edu with the message, your username, and the time.
 - Nothing was submitted, so nothing was charged against the shared allocation.
 
+**Third occurrence (2026-10-23 22:00 → 2026-10-24 23:04 PDT, ~25 h)** ended with the disk evidently
+still full: the first jobs accepted afterwards died with `done.txt: No space left on device` and
+`tar: output.tar.gz: Cannot open: No space left on device` in `scheduler_stderr.txt` — their STDOUT is
+truncated and there is no tarball, although NSG reports `COMPLETED failed=false`. So the staging
+error and a full NSG workspace filesystem are probably one incident. **Abide by:** after an outage,
+treat the first jobs as suspect; a `COMPLETED` job without `output.tar.gz` is lost and must be resubmitted.
+NSG's own queue can also hold a job in `SUBMITTING` for many hours (one `chbmit` shard: 20 h) before
+Slurm sees it; nothing on our side changes that.
+
 ## 6. Data constraints
 
 - **[measured]** NEMAR/OpenNeuro data at `$NEMARPATH` is **read-only** (552 datasets as of 2026-09-22, git-annex). Your
@@ -118,6 +127,15 @@ gateway's upload-staging disk, not your zip: the same July probe zip that ran to
   Such data is fetched at runtime via MOABB/HF (runtime internet works) or must be staged.
 - **[verify]** **Runtime internet egress works today** but is **not documented/guaranteed** — it could be
   restricted. For reproducibility, prefer vendored wheels/data over relying on it.
+
+- **[measured 2026-10-25]** **Hugging Face rate-limits anonymous downloads per IP, and every Expanse job
+  shares a few egress NAT addresses** (198.202.103.196, 198.202.101.228 seen). Four parallel `chbmit`
+  shards each got `We had to rate limit your IP … pass a HF_TOKEN`, the zarr snapshot came down
+  incomplete, and every later cell failed with `No group found in store`; `physionet` (4,584 files)
+  throttled until the 16 h limit. **Abide by:** ship a Hugging Face token (free account; a
+  fine-grained *read-only* token is enough) — `oeb_plan.py submit --hf-token-file ~/.cache/huggingface/token`
+  puts it in a submit-time copy of the zip only, never in the repo or the returned tarball — and keep
+  concurrent HF-pulling jobs low. Datasets with thousands of small files are the worst case.
 
 ## 7. Compliance & attribution
 

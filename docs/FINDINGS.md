@@ -372,3 +372,29 @@ EEGPT × {lora, full_finetune}, linear head, arithmetic seed 0, `--training-over
   `shard.json`).
 - NSG-R cost of this shard: 55 min queue for 28 min of GPU — the queue, not the GPU, sets the
   wall-clock of a sweep (consistent with 7 min / 1 h 52 / 19 min on the earlier shards).
+
+## 9. public1, first batch (2026-10-24/25): three ways a shard can come back empty
+
+The first public sweep (`OPENEEGBENCH.md` §4: 26 jobs, seed 0) went in at 23:04 PDT on 2026-10-24,
+the minute a 25 h NSG-R staging outage cleared. Of the first 10 fetched shards **none produced a
+usable cell**, for three independent reasons:
+
+| shards | what NSG said | what actually happened | evidence |
+|---|---|---|---|
+| arithmetic, bcic2a, bcic2020_3 | COMPLETED, failed=false | ran 4 min, then the NSG workspace disk was full: STDOUT truncated, no `output.tar.gz` | `scheduler_stderr.txt`: `No space left on device` on `done.txt` and `tar` |
+| physionet, mdd_mumtaz2016 | COMPLETED, failed=false | started in the same full-disk window (STDOUT = 174 B header only); physionet's 4,584-file HF pull throttled; **killed at the 16 h limit** | `slurmstepd: CANCELLED … DUE TO TIME LIMIT`, STDERR stuck at `Fetching 4584 files: 18%` |
+| chbmit × {bendr, cbramod, labram, signal_jepa, reve} | COMPLETED, tarball present | ran 17:13–17:17 on 2026-10-25, 0/9 cells: HF rate-limited the node's shared IP, snapshot incomplete, every cell `No group found in store` | `exception` in `shard_summary.json` rows: `We had to rate limit your IP (198.202.103.196)` |
+
+What was right: pip 143–150 s per job (same as before), the driver's per-cell error capture
+(0.1 s per failed cell after the first), tarballs 27–35 kB. What was wrong is all upstream of our
+code — NSG's disk, HF's anonymous quota — and both are now in `LIMITATIONS.md` (§5a, §6).
+
+Consequences: (1) `submit --hf-token-file` ships a Hugging Face token in a submit-time copy of the
+zip (`run.py` reads and deletes it; `summary["hf_token"]` records that it was used); (2) `submit
+--only SHARD…` resubmits just the lost shards; (3) arithmetic's first cell reproduced 0.5764 again
+before the disk filled — the fourth identical number on V100. The 16 h / 48 h limits are untouched:
+with a token, physionet's download should take minutes, not hours (HF throughput on the node is still
+the open measurement).
+
+The first batch also answered the per-user concurrency question: NSG passed 3 jobs to Slurm at a
+time and held the others in `SUBMITTING` for 2–20 h, so `--max-inflight 6` was already generous.
