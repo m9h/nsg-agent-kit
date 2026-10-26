@@ -20,3 +20,4 @@ sweep/oeb/*/jobs.json
 sweep/oeb/*/pooled_results/
 sweep/oeb/*/shards/*.zip
 sweep/oeb/*/shards/*/reve_weights/
+sweep/oeb/*/fetched_lost/

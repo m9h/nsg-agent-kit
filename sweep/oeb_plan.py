@@ -95,6 +95,29 @@ def plan(a):
         print(f"  {m['shard']:34s} {m['n_cells']:4d} cells  {m['runtime']:4.0f} h  {m['zip_bytes']/1e6:7.1f} MB")
 
 
+def _shard_summary(root, sid):
+    """shard_summary.json out of fetched/<sid>/output.tar.gz, or None if the shard came back empty."""
+    tgz = os.path.join(root, "fetched", sid, "output.tar.gz")
+    if not os.path.isfile(tgz):
+        return None
+    with tarfile.open(tgz) as t:
+        m = [x for x in t.getmembers() if x.name.endswith("shard_summary.json")]
+        return json.load(t.extractfile(m[0])) if m else None
+
+
+def lost_shards(root, jobs):
+    """Fetched shards with nothing usable: no tarball (NSG disk full, FINDINGS §9), no summary, or
+    zero completed cells (e.g. the HF rate limit took the dataset out). These are re-run, not results."""
+    out = []
+    for sid, j in jobs.items():
+        if not j.get("fetched"):
+            continue
+        s = _shard_summary(root, sid)
+        if s is None or not s.get("n_completed"):
+            out.append(sid)
+    return out
+
+
 def _zip_with_token(zpath, sid, token):
     """The committed shard zip never holds a secret. With --hf-token-file, a copy is made under
     $TMPDIR (or the scratchpad) with `<sid>/hf_token` added; run.py reads and deletes it."""
@@ -140,12 +163,21 @@ def submit(a):
     # only while fewer than N of this plan's jobs are unfetched; a `poll; submit` loop tops it up.
     inflight = sum(1 for j in jobs.values() if not j.get("fetched"))
     token = open(os.path.expanduser(a.hf_token_file)).read().strip() if a.hf_token_file else None
+    redo = set(lost_shards(root, jobs)) if a.redo_lost else set()
     for m in man["shards"]:
         sid = m["shard"]
         if a.only and sid not in a.only:
             continue
-        if sid in jobs and not a.resubmit:
+        if sid in jobs and not a.resubmit and sid not in redo:
             continue
+        if sid in jobs:                                   # re-run: keep the old attempt's files aside
+            old = os.path.join(root, "fetched", sid)
+            if os.path.isdir(old):
+                os.makedirs(os.path.join(root, "fetched_lost"), exist_ok=True)
+                shutil.move(old, os.path.join(root, "fetched_lost", f"{sid}_{jobs[sid]['handle'][-8:]}"))
+            prev = jobs[sid].get("previous", []) + [jobs[sid]["handle"]]
+        else:
+            prev = []
         if a.max_inflight and inflight >= a.max_inflight:
             left = sum(1 for x in man["shards"] if x["shard"] not in jobs)
             print(f"  {inflight} in flight >= --max-inflight {a.max_inflight}; {left} shard(s) wait")
@@ -167,7 +199,9 @@ def submit(a):
                 raise SystemExit(75)
             raise SystemExit(f"{sid}: no jobHandle in NSG response:\n{xml[-2000:]}")
         jobs[sid] = {"handle": handle, "tool": tool, "vparams": vp, "submitted": time.strftime("%Y-%m-%dT%H:%M:%S"),
-                     "stage": _tag(xml, "jobStage")}
+                     "stage": _tag(xml, "jobStage"), "hf_token": bool(token)}
+        if prev:
+            jobs[sid]["previous"] = prev
         print(f"  {sid}: {handle}  ({jobs[sid]['stage']})")
         json.dump(jobs, open(jobs_path, "w"), indent=2)
         inflight += 1
@@ -203,8 +237,11 @@ def poll(a):
             print(f"  {sid}: {j['stage']}  {j['last_message'] or ''}")
     json.dump(jobs, open(jobs_path, "w"), indent=2)
     done = sum(1 for j in jobs.values() if j.get("fetched"))
+    lost = lost_shards(root, jobs)
+    if lost:
+        print(f"  !! {len(lost)} fetched shard(s) with no usable result (submit --redo-lost): {' '.join(lost)}")
     if pending:
-        raise SystemExit(f"{done} fetched, {pending} job(s) still running; run poll again (NSG queue+run is typically 5-15 min for a smoke shard)")
+        raise SystemExit(f"{done} fetched ({len(lost)} lost), {pending} job(s) still running; run poll again")
     print("all jobs fetched -> `oeb_plan.py merge --name %s`" % a.name)
 
 
@@ -303,6 +340,8 @@ def main():
     ps.add_argument("--gb-memory", type=int, default=None)
     ps.add_argument("--resubmit", action="store_true")
     ps.add_argument("--only", nargs="*", default=None, metavar="SHARD", help="restrict to these shard ids")
+    ps.add_argument("--redo-lost", action="store_true",
+                    help="also resubmit fetched shards that came back with no tarball / no completed cell")
     ps.add_argument("--hf-token-file", default=None, metavar="PATH",
                     help="read a Hugging Face token (e.g. ~/.cache/huggingface/token) and ship it in a submit-time "
                          "copy of the zip as <shard>/hf_token; lifts HF's per-IP anonymous rate limit (LIMITATIONS §6)")
