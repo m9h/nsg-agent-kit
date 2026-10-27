@@ -114,6 +114,8 @@ still full: the first jobs accepted afterwards died with `done.txt: No space lef
 truncated and there is no tarball, although NSG reports `COMPLETED failed=false`. So the staging
 error and a full NSG workspace filesystem are probably one incident. **Abide by:** after an outage,
 treat the first jobs as suspect; a `COMPLETED` job without `output.tar.gz` is lost and must be resubmitted.
+It happened again on 2026-10-26 (jobs 55298834/5, two shards) without a preceding staging outage, so a
+full workspace disk is a recurring NSG condition. `oeb_plan.py submit --redo-lost` resubmits those.
 NSG's own queue can also hold a job in `SUBMITTING` for many hours (one `chbmit` shard: 20 h) before
 Slurm sees it; nothing on our side changes that.
 
@@ -136,6 +138,14 @@ Slurm sees it; nothing on our side changes that.
   fine-grained *read-only* token is enough) — `oeb_plan.py submit --hf-token-file ~/.cache/huggingface/token`
   puts it in a submit-time copy of the zip only, never in the repo or the returned tarball — and keep
   concurrent HF-pulling jobs low. Datasets with thousands of small files are the worst case.
+- **[measured 2026-10-27]** **A token is not enough on many-file datasets.** Upstream calls
+  `snapshot_download()` again in *every* cell, so a 59-cell physionet shard (4,584 zarr files) makes
+  the Hub requests 59 times; with a token it still got `429 Too Many Requests` and those cells died
+  with `'NoneType' object has no attribute 'status_code'` (one attempt 0/59, the next 47/59 after
+  6.6 h). **Abide by:** the driver now prefetches each dataset and backbone weight file once per
+  shard with exponential backoff (`oeb_shard.prefetch`, ≤ 90 min), then runs the cells with
+  `HF_HUB_OFFLINE=1`, which resolves commit-pinned snapshots from the local cache with no network
+  traffic. `shard_summary.json` records `prefetch` (seconds, tries per repo) and `hf_offline_cells`.
 
 ## 7. Compliance & attribution
 

@@ -122,6 +122,63 @@ def _deviation(training):
     return ",".join(diff)
 
 
+def prefetch(cfg, summary, budget_s=5400):
+    """Download every dataset snapshot and backbone weight file the shard needs ONCE, with backoff
+    on HTTP 429, before any cell runs; the cells then run with HF_HUB_OFFLINE=1.
+
+    Why: upstream calls snapshot_download() again in every cell, and even with a warm cache that is
+    a repo_info call plus per-file traffic. On a many-file zarr (physionet: 4,584 files) Hugging Face
+    answers 429 Too Many Requests even WITH a token, and the cell dies with "'NoneType' object has
+    no attribute 'status_code'" (public1, 2026-10-26/27; LIMITATIONS §6). Commit-pinned revisions
+    resolve from the local cache in offline mode, so after this nothing in a cell touches the Hub.
+    A resumed snapshot_download skips files already in the cache, so retrying is cheap."""
+    shim_sqlite3(summary)
+    from huggingface_hub import hf_hub_download, snapshot_download
+    from open_eeg_bench.default_configs import backbones as BB
+    from open_eeg_bench.default_configs import datasets as DS
+    t_end, report = time.time() + budget_s, {}
+
+    def with_backoff(name, fn):
+        t0, tries = time.time(), 0
+        while True:
+            tries += 1
+            try:
+                fn()
+                report[name] = {"seconds": round(time.time() - t0, 1), "tries": tries}
+                return True
+            except Exception as e:                    # noqa: BLE001 - 429/5xx/connection: retry
+                wait = min(60 * 2 ** (tries - 1), 600)
+                if time.time() + wait > t_end:
+                    report[name] = {"seconds": round(time.time() - t0, 1), "tries": tries, "error": repr(e)[:300]}
+                    return False
+                print(f"[prefetch] {name}: {repr(e)[:160]} -> retry in {wait}s", flush=True)
+                time.sleep(wait)
+
+    ok = True
+    for name in cfg.get("datasets", []):
+        d = getattr(DS, name)()
+        ok &= with_backoff(d.hf_id, lambda d=d: snapshot_download(
+            d.hf_id, repo_type="dataset", revision=d.revision, max_workers=2))
+    for bb in cfg.get("backbones", []):
+        if bb in cfg.get("checkpoints", {}):
+            continue
+        repo = BB.ALL_BACKBONES[bb]().hub_repo
+        if not repo:
+            continue
+
+        def weights(repo=repo):
+            try:
+                hf_hub_download(repo, "model.safetensors")
+            except Exception as e:                    # noqa: BLE001
+                if "404" not in repr(e) and "EntryNotFound" not in repr(e):
+                    raise
+                hf_hub_download(repo, "pytorch_model.bin")
+        ok &= with_backoff(repo, weights)
+    summary["prefetch"] = report
+    summary["prefetch_ok"] = bool(ok)
+    return ok
+
+
 def run_shard(cfg, summary):
     """Runs in the fresh interpreter. Builds upstream Experiment configs and runs them in-process
     (cluster=None) with the exca cache under ./results."""
@@ -197,6 +254,15 @@ def run_shard(cfg, summary):
 
 def main():
     cfg = load_cfg()
+    if os.environ.get("NSGKIT_OEB_PREFETCH") == "1":
+        summary = json.load(open(SUMMARY))
+        try:
+            ok = prefetch(cfg, summary)
+        except Exception as e:                       # noqa: BLE001
+            summary["prefetch_ok"], summary["prefetch_error"] = False, repr(e)[:500]
+            ok = False
+        json.dump(summary, open(SUMMARY, "w"), indent=2, default=str)
+        sys.exit(0 if ok else 3)
     if os.environ.get("NSGKIT_OEB_CHILD") == "1":
         summary = json.load(open(SUMMARY))
         for stale in ("shard_error", "trace", "rows", "cells", "partial"):   # a re-run must not inherit a prior failure
@@ -237,6 +303,17 @@ def main():
     else:
         summary["hf_token"] = "no (anonymous -> HF per-IP rate limit, LIMITATIONS §6)"
     json.dump(summary, open(SUMMARY, "w"), indent=2)
+    t0 = time.time()
+    pre = subprocess.run([sys.executable, os.path.abspath(__file__)], env=dict(env, NSGKIT_OEB_CHILD="0",
+                                                                                  NSGKIT_OEB_PREFETCH="1"))
+    summary = json.load(open(SUMMARY))
+    summary["prefetch_seconds"] = round(time.time() - t0, 1)
+    if pre.returncode == 0:
+        env["HF_HUB_OFFLINE"] = "1"                  # cells read only the cache (see prefetch())
+        summary["hf_offline_cells"] = True
+    else:                                            # fall back to upstream's own (online) behaviour
+        summary["hf_offline_cells"] = False
+    json.dump(summary, open(SUMMARY, "w"), indent=2, default=str)
     r = subprocess.run([sys.executable, os.path.abspath(__file__)], env=env)
     sys.exit(r.returncode)
 

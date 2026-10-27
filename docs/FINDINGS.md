@@ -398,3 +398,26 @@ the open measurement).
 
 The first batch also answered the per-user concurrency question: NSG passed 3 jobs to Slurm at a
 time and held the others in `SUBMITTING` for 2–20 h, so `--max-inflight 6` was already generous.
+
+### 9a. public1 after the restart with a token (2026-10-26/27)
+
+| shard | cells | GPU time | notes |
+|---|---|---|---|
+| arithmetic, 7 backbones | 47/59 | 45 min | BIOT identical to bench1; best REVE lora 0.785, CBraMod lora 0.701; BENDR + Signal-JEPA at chance |
+| bcic2020_3, 7 backbones | 53/59 | 5.2 h | 5 classes (chance 0.20); best REVE frozen 0.283 |
+| physionet, 7 backbones | 47/59 | 6.6 h | 5 cells lost to HF 429 even with the token |
+| faced, BIOT | 8/8 | 88 min | 9 classes (chance 0.11); 0.155–0.191 |
+
+Three findings, two of them new problems:
+
+- **HF 429 with a token**: upstream re-runs `snapshot_download()` per cell → `prefetch()` once per
+  shard + `HF_HUB_OFFLINE=1` for the cells (`LIMITATIONS.md` §6). Verified locally: arithmetic
+  prefetch 61 s for 510 files, then an offline dataset + weight load in 4 s.
+- **A second NSG disk-full** (2026-10-26, two shards, no outage before it): recurring, not a one-off.
+- **New stack failures, the same on every dataset so far** (the contract's
+  `test_no_cell_failed_for_a_software_reason` will be RED on them): LaBraM × {lora, adalora, dora}
+  `Targeting an nn.Parameter on the top-level module is not supported (parameter 'temporal_embedding')`
+  (peft 0.21.2 vs LaBraM's `training_required_parameters`), and CBraMod / REVE × one adapter each
+  `shape '[N, …]' is invalid for input of size 0`. Not yet diagnosed.
+- Also fixed: a fetch interrupted after the download left files that `curl -OJ` refuses to
+  overwrite, so the poll failed on physionet for 4 h; `poll` now fetches into an empty directory.

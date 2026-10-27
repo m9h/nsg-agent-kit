@@ -226,6 +226,11 @@ def poll(a):
         j["last_message"] = msgs[-1].split("</message>")[0][:200] if msgs else None
         if terminal:
             dest = os.path.join(root, "fetched", sid)
+            # nsgr.sh fetch uses `curl -OJ`, which refuses to overwrite: a fetch interrupted after the
+            # download but before jobs.json is saved fails forever with curl (23) (public1 physionet,
+            # 2026-10-27). Start each fetch from an empty directory.
+            if os.path.isdir(dest):
+                shutil.rmtree(dest)
             _nsgr(["fetch", j["handle"], dest])
             j["fetched"] = os.path.relpath(dest, HERE)
             got = sorted(os.listdir(dest))
