@@ -62,7 +62,8 @@ def plan(a):
             shutil.copy(os.path.join(HERE, "oeb_shard.py"), os.path.join(d, "run.py"))
             cfg = {"backbones": backbones, "datasets": [ds], "strategies": a.strategies,
                    "heads": a.heads, "seeds": [seed], "device": a.device,
-                   "torch": a.torch, "oeb": a.oeb, "peft": a.peft, "transformers": a.transformers}
+                   "torch": a.torch, "oeb": a.oeb, "peft": a.peft, "transformers": a.transformers,
+                   "runtime_hours": runtime}   # the driver stops starting cells before Slurm kills it
             if a.training_override:
                 tov = {}
                 for spec in a.training_override:            # backbone:key=value, e.g. eegpt:batch_size=16
@@ -231,12 +232,25 @@ def poll(a):
             # 2026-10-27). Start each fetch from an empty directory.
             if os.path.isdir(dest):
                 shutil.rmtree(dest)
-            _nsgr(["fetch", j["handle"], dest])
+            try:
+                _nsgr(["fetch", j["handle"], dest])
+            except SystemExit as e:
+                # One bad fetch must not abort the pass: before this, a terminal job whose output
+                # listing was empty (public1 chbmit_bendr, 2026-10-27) raised here, jobs.json was
+                # never saved, and five finished shards were re-downloaded every 5 min for 12 h.
+                j["fetch_errors"] = j.get("fetch_errors", 0) + 1
+                print(f"  {sid}: {j['stage']} but fetch failed ({j['fetch_errors']}x): {str(e)[:200]}")
+                if j["fetch_errors"] < 3:
+                    pending += 1
+                    json.dump(jobs, open(jobs_path, "w"), indent=2)
+                    continue
+                os.makedirs(dest, exist_ok=True)   # give up: an empty fetch counts as lost -> --redo-lost
             j["fetched"] = os.path.relpath(dest, HERE)
             got = sorted(os.listdir(dest))
             print(f"  {sid}: {j['stage']} failed={j['failed']} -> fetched {got}")
             if not any(f.endswith(".tar.gz") for f in got):
                 print(f"    !! no output.tar.gz for {sid}: read STDERR/STDOUT in {dest}")
+            json.dump(jobs, open(jobs_path, "w"), indent=2)
         else:
             pending += 1
             print(f"  {sid}: {j['stage']}  {j['last_message'] or ''}")

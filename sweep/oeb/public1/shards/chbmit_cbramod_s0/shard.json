@@ -26,5 +26,6 @@
   "torch": "2.4.1",
   "oeb": "0.6.0",
   "peft": "peft==0.21.2",
-  "transformers": "transformers==4.46.3"
+  "transformers": "transformers==4.46.3",
+  "runtime_hours": 48.0
 }

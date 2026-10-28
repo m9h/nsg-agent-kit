@@ -6,182 +6,182 @@
       "zip": "oeb/public1/shards/arithmetic_zyma2019_s0.zip",
       "n_cells": 63,
       "runtime": 16.0,
-      "zip_bytes": 7089
+      "zip_bytes": 7484
     },
     {
       "shard": "bcic2a_s0",
       "zip": "oeb/public1/shards/bcic2a_s0.zip",
       "n_cells": 63,
       "runtime": 16.0,
-      "zip_bytes": 7027
+      "zip_bytes": 7421
     },
     {
       "shard": "bcic2020_3_s0",
       "zip": "oeb/public1/shards/bcic2020_3_s0.zip",
       "n_cells": 63,
       "runtime": 16.0,
-      "zip_bytes": 7045
+      "zip_bytes": 7440
     },
     {
       "shard": "physionet_s0",
       "zip": "oeb/public1/shards/physionet_s0.zip",
       "n_cells": 63,
       "runtime": 16.0,
-      "zip_bytes": 7041
+      "zip_bytes": 7436
     },
     {
       "shard": "mdd_mumtaz2016_s0",
       "zip": "oeb/public1/shards/mdd_mumtaz2016_s0.zip",
       "n_cells": 63,
       "runtime": 16.0,
-      "zip_bytes": 7065
+      "zip_bytes": 7460
     },
     {
       "shard": "chbmit_biot_s0",
       "zip": "oeb/public1/shards/chbmit_biot_s0.zip",
       "n_cells": 9,
       "runtime": 48.0,
-      "zip_bytes": 7016
+      "zip_bytes": 7411
     },
     {
       "shard": "chbmit_labram_s0",
       "zip": "oeb/public1/shards/chbmit_labram_s0.zip",
       "n_cells": 9,
       "runtime": 48.0,
-      "zip_bytes": 7026
+      "zip_bytes": 7422
     },
     {
       "shard": "chbmit_bendr_s0",
       "zip": "oeb/public1/shards/chbmit_bendr_s0.zip",
       "n_cells": 9,
       "runtime": 48.0,
-      "zip_bytes": 7021
+      "zip_bytes": 7416
     },
     {
       "shard": "chbmit_cbramod_s0",
       "zip": "oeb/public1/shards/chbmit_cbramod_s0.zip",
       "n_cells": 9,
       "runtime": 48.0,
-      "zip_bytes": 7031
+      "zip_bytes": 7426
     },
     {
       "shard": "chbmit_signal_jepa_s0",
       "zip": "oeb/public1/shards/chbmit_signal_jepa_s0.zip",
       "n_cells": 9,
       "runtime": 48.0,
-      "zip_bytes": 7051
+      "zip_bytes": 7446
     },
     {
       "shard": "chbmit_reve_s0",
       "zip": "oeb/public1/shards/chbmit_reve_s0.zip",
       "n_cells": 9,
       "runtime": 48.0,
-      "zip_bytes": 7018
+      "zip_bytes": 7412
     },
     {
       "shard": "chbmit_eegpt_s0",
       "zip": "oeb/public1/shards/chbmit_eegpt_s0.zip",
       "n_cells": 9,
       "runtime": 48.0,
-      "zip_bytes": 7022
+      "zip_bytes": 7417
     },
     {
       "shard": "faced_biot_s0",
       "zip": "oeb/public1/shards/faced_biot_s0.zip",
       "n_cells": 9,
       "runtime": 48.0,
-      "zip_bytes": 7011
+      "zip_bytes": 7407
     },
     {
       "shard": "faced_labram_s0",
       "zip": "oeb/public1/shards/faced_labram_s0.zip",
       "n_cells": 9,
       "runtime": 48.0,
-      "zip_bytes": 7021
+      "zip_bytes": 7417
     },
     {
       "shard": "faced_bendr_s0",
       "zip": "oeb/public1/shards/faced_bendr_s0.zip",
       "n_cells": 9,
       "runtime": 48.0,
-      "zip_bytes": 7016
+      "zip_bytes": 7411
     },
     {
       "shard": "faced_cbramod_s0",
       "zip": "oeb/public1/shards/faced_cbramod_s0.zip",
       "n_cells": 9,
       "runtime": 48.0,
-      "zip_bytes": 7026
+      "zip_bytes": 7421
     },
     {
       "shard": "faced_signal_jepa_s0",
       "zip": "oeb/public1/shards/faced_signal_jepa_s0.zip",
       "n_cells": 9,
       "runtime": 48.0,
-      "zip_bytes": 7046
+      "zip_bytes": 7441
     },
     {
       "shard": "faced_reve_s0",
       "zip": "oeb/public1/shards/faced_reve_s0.zip",
       "n_cells": 9,
       "runtime": 48.0,
-      "zip_bytes": 7012
+      "zip_bytes": 7408
     },
     {
       "shard": "faced_eegpt_s0",
       "zip": "oeb/public1/shards/faced_eegpt_s0.zip",
       "n_cells": 9,
       "runtime": 48.0,
-      "zip_bytes": 7017
+      "zip_bytes": 7413
     },
     {
       "shard": "isruc_sleep_biot_s0",
       "zip": "oeb/public1/shards/isruc_sleep_biot_s0.zip",
       "n_cells": 9,
       "runtime": 48.0,
-      "zip_bytes": 7039
+      "zip_bytes": 7435
     },
     {
       "shard": "isruc_sleep_labram_s0",
       "zip": "oeb/public1/shards/isruc_sleep_labram_s0.zip",
       "n_cells": 9,
       "runtime": 48.0,
-      "zip_bytes": 7049
+      "zip_bytes": 7444
     },
     {
       "shard": "isruc_sleep_bendr_s0",
       "zip": "oeb/public1/shards/isruc_sleep_bendr_s0.zip",
       "n_cells": 9,
       "runtime": 48.0,
-      "zip_bytes": 7044
+      "zip_bytes": 7439
     },
     {
       "shard": "isruc_sleep_cbramod_s0",
       "zip": "oeb/public1/shards/isruc_sleep_cbramod_s0.zip",
       "n_cells": 9,
       "runtime": 48.0,
-      "zip_bytes": 7055
+      "zip_bytes": 7449
     },
     {
       "shard": "isruc_sleep_signal_jepa_s0",
       "zip": "oeb/public1/shards/isruc_sleep_signal_jepa_s0.zip",
       "n_cells": 9,
       "runtime": 48.0,
-      "zip_bytes": 7074
+      "zip_bytes": 7469
     },
     {
       "shard": "isruc_sleep_reve_s0",
       "zip": "oeb/public1/shards/isruc_sleep_reve_s0.zip",
       "n_cells": 9,
       "runtime": 48.0,
-      "zip_bytes": 7040
+      "zip_bytes": 7435
     },
     {
       "shard": "isruc_sleep_eegpt_s0",
       "zip": "oeb/public1/shards/isruc_sleep_eegpt_s0.zip",
       "n_cells": 9,
       "runtime": 48.0,
-      "zip_bytes": 7045
+      "zip_bytes": 7440
     }
   ],
   "vparams_hint": {

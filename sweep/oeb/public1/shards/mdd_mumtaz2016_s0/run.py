@@ -30,6 +30,7 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 SCRATCH = os.environ.get("TMPDIR", "/tmp")
 LIBS = os.path.join(SCRATCH, "nsgkit-oeblibs")
+DEADLINE_MARGIN_S = 1800                       # tar of ./results + NSG's own epilogue, with room to spare
 HF_HOME = os.path.join(SCRATCH, "hf")          # dataset + weight cache: NOT returned in output.tar.gz
 RESULTS = os.path.join(HERE, "results")        # exca cache: returned in output.tar.gz
 SUMMARY = os.path.join(HERE, "shard_summary.json")
@@ -222,12 +223,22 @@ def run_shard(cfg, summary):
     # upstream's fit_time. Failures stay per-cell (collect_all=True) and never abort the shard.
     import gc
     rows, cells = [], []
-    for e in experiments:
+    # NSG tars the workdir only when the job exits on its own: a Slurm TIME LIMIT kill returns no
+    # output.tar.gz, so every finished cell is lost (public1 bcic2a + mdd, 2026-10-27, 16 h each).
+    # Stop starting cells while there is still time for the longest cell seen so far plus a margin.
+    deadline = float(os.environ.get("NSGKIT_DEADLINE", "inf"))
+    longest = 0.0
+    for i, e in enumerate(experiments):
+        if time.time() + longest + DEADLINE_MARGIN_S > deadline:
+            summary["deadline_stopped"] = {"after_cells": i, "not_started": len(experiments) - i,
+                                           "longest_cell_s": round(longest, 1)}
+            break
         if torch.cuda.is_available():
             torch.cuda.reset_peak_memory_stats()
         tc = time.time()
         df = run_many([e], collect_all=True)
         wall = round(time.time() - tc, 1)
+        longest = max(longest, wall)
         peak = round(torch.cuda.max_memory_allocated() / 2**30, 2) if torch.cuda.is_available() else None
         gc.collect()
         if torch.cuda.is_available():
@@ -277,6 +288,8 @@ def main():
         json.dump(summary, open(SUMMARY, "w"), indent=2, default=str)
         return
 
+    if cfg.get("runtime_hours"):                     # Slurm's clock starts about when we do
+        os.environ["NSGKIT_DEADLINE"] = str(time.time() + float(cfg["runtime_hours"]) * 3600)
     summary = {"schema": "nsg-agent-kit/oeb-shard/v1", "started": time.strftime("%Y-%m-%dT%H:%M:%S"),
                "shard": cfg, "node": os.uname().nodename, "python": sys.version.split()[0]}
     os.makedirs(HF_HOME, exist_ok=True)
