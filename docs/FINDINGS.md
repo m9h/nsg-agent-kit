@@ -421,3 +421,59 @@ Three findings, two of them new problems:
   `shape '[N, …]' is invalid for input of size 0`. Not yet diagnosed.
 - Also fixed: a fetch interrupted after the download left files that `curl -OJ` refuses to
   overwrite, so the poll failed on physionet for 4 h; `poll` now fetches into an empty directory.
+
+### 9b. public1 with prefetch + offline cells (2026-10-27 → 31): 20 of 26 shards in, both stack failures diagnosed
+
+The loop ran to its 120 h deadline with all 26 shards submitted: 20 fetched with none lost, 6 still in
+Slurm (chbmit/faced/isruc × LaBraM, isruc × Signal-JEPA/REVE/EEGPT), plus physionet resubmitted on
+the prefetch zip (below). `merge` over the 20: **427 rows, 359 completed.**
+
+**The prefetch fix worked.** Every shard that ran with it has `prefetch_ok: true` (2–56 min per shard,
+isruc_sleep the slowest) and **no cell in those shards failed on HF.** bcic2a, which hit the 16 h limit
+twice on the old zip, finished in 2.2 h. The only HF failures left are 6 BIOT physionet cells from the
+pre-prefetch run → physionet resubmitted with `submit --only physionet_s0 --resubmit` (the 47-cell
+attempt is kept in `fetched_lost/`). No shard needed the new `deadline_stopped` guard.
+
+Best balanced accuracy per backbone (best strategy for each dataset, seed 0, isruc and LaBraM partial):
+
+| backbone | arithmetic | bcic2020-3 | bcic2a | chbmit | faced | isruc-sleep | mdd | physionet |
+|---|---|---|---|---|---|---|---|---|
+| chance | 0.50 | 0.20 | 0.25 | 0.50 | 0.11 | 0.20 | 0.50 | 0.25 |
+| BENDR | 0.500 | 0.213 | 0.278 | 0.553 | 0.130 | 0.382 | 0.731 | 0.298 |
+| BIOT | 0.681 | 0.271 | 0.304 | 0.818 | 0.191 | **0.774** | 0.888 | 0.340 |
+| CBraMod | 0.701 | 0.269 | 0.481 | **0.961** | **0.333** | 0.764 | **0.890** | 0.591 |
+| EEGPT (frozen/ridge only) | 0.597 | 0.247 | 0.333 | 0.728 | 0.169 | — | 0.874 | 0.476 |
+| LaBraM | 0.649 | 0.208 | 0.367 | — | — | — | 0.863 | 0.535 |
+| REVE | **0.785** | **0.283** | **0.563** | 0.859 | 0.320 | — | 0.879 | **0.630** |
+| Signal-JEPA | 0.500 | 0.209 | 0.351 | 0.624 | 0.227 | — | 0.718 | 0.481 |
+
+REVE and CBraMod lead; BENDR and Signal-JEPA are near chance on most tasks. BIOT frozen on chbmit
+is exactly 0.500 (the majority class on an imbalanced seizure task) — a result, so the contract's
+reference-cell check is now arithmetic-only, as its docstring always said.
+
+**The two stack failures are upstream / peft bugs, not our pins** (reproduced locally on CPU with
+random weights, peft 0.21.2 and 0.18.1; repro in the session scratchpad):
+
+- **LaBraM × {lora, dora, adalora}** (15 cells). open-eeg-bench passes LaBraM's
+  `temporal_embedding` — an `nn.Parameter` on the *top-level* module — to peft as LoRA-family
+  `target_parameters`. peft 0.21.2 (latest) rejects top-level parameters; 0.17.1/0.18.1 accept them
+  but raise `lora.ParamWrapper does not work with lora_dropout != 0` against upstream's
+  `dropout=0.1`. **No released peft runs this configuration.** Upstream's own comment says the
+  embedding must be *retrained from scratch*, which a LoRA delta on it would not do anyway.
+- **CBraMod × oft, REVE × oft** (15 cells). peft's OFT rotation unfolds every 4-D input as if it fed a
+  `Conv2d` (`if len(orig_shape) == 4: x = self._unfold(x)`). CBraMod's
+  `patch_embedding.spectral_proj` and REVE's `to_patch_embedding` are `Linear` layers fed
+  `(batch, chan, patch, feat)` → the unfold with `kernel=(0, 0)` is empty → `shape '[N, r, b]' is
+  invalid for input of size 0`. Same code in 0.18.1.
+
+Both are recorded in the contract as `KNOWN_UPSTREAM_BROKEN`, matched on the exception text, so a
+different failure in those cells is still RED. We do not patch around them: that would change the
+protocol being benchmarked. Drafts for an open-eeg-bench issue and a peft issue are with the user.
+
+New OOM: **REVE × DoRA on FACED** (1 cell, the only non-EEGPT OOM in 427 rows) → `LIMITATIONS.md` §2
+and `KNOWN_V100_OOM_CELLS`.
+
+Two harness bugs found and fixed on the way (`5f41213`): `poll` aborted the whole pass when one
+terminal job listed no outputs, so nothing was saved and nothing resubmitted for ~12 h; and a Slurm
+TIME LIMIT kill returns no tarball at all, so the driver now stops starting cells once the longest
+cell so far + 30 min no longer fits in `runtime_hours`.
